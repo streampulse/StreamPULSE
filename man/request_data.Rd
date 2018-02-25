@@ -47,7 +47,7 @@ parameter will eventually be deprecated.).}
 StreamPULSE. Only necessary for accessing embargoed data.}
 }
 \value{
-returns a list containing two \code{data.frame}s.
+returns a \code{list} containing two \code{data.frame}s.
   The first contains all requested
   data. The second contains site metadata. Variable names and corresponding
   values are stacked in two long columns. Use \code{prep_metabolism} to

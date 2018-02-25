@@ -55,6 +55,12 @@
 #'     startdate='2016-06-10', enddate='2016-10-23')
 request_data = function(sitecode, startdate=NULL, enddate=NULL, variables=NULL,
     flags=TRUE, token=NULL){
+    # Download data from the streampulse platform
+
+    # sitecode is a site name
+    # startdate and enddate are YYYY-MM-DD strings, e.g., '1983-12-09'
+    # variables is a vector of c('variable_one', ..., 'variable_n')
+    # flags is logical, include flag data or not
 
     #basic checks
     if(length(sitecode)>1){

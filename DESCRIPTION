@@ -20,6 +20,6 @@ Encoding: UTF-8
 LazyData: true
 URL: https://github.com/streampulse/StreamPULSE
 BugReports: https://github.com/streampulse/StreamPULSE/issues
-Imports: coda,plyr,dplyr,httr,jsonlite,R2jags,tidyr,imputeTS,
-    accelerometry,geoknife,zoo
+Imports: plyr,dplyr,httr,jsonlite,tidyr,imputeTS,
+    accelerometry,geosphere,readr,tibble,zoo
 RoxygenNote: 6.0.1

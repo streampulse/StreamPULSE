@@ -2,7 +2,9 @@
 #'
 #' Formats the output of \code{\link{request_data}} for stream metabolism model
 #' of choice. Filters flagged data and imputes missing data. Acquires/estimates
-#' additional variables if necessary.
+#' additional variables if necessary. NOTE: support for modeling with
+#' \code{BASE} is currently in development. Please use \code{streamMetabolizer}
+#' in the meantime.
 #'
 #' \code{BASE} and \code{streamMetabolizer}, the two metabolism modeling
 #' platforms available via StreamPULSE, require different data input formats.
@@ -15,17 +17,18 @@
 #' concentration, water temperature, and light (PAR) data. If light is missing,
 #' it will automatically be estimated based on solar angle. In addition to these
 #' variables,
-#' \code{streamMetabolizer} requires DO % saturation and depth, and
-#' \code{BASE} requires atmospheric pressure. If DO % saturation is missing,
+#' \code{streamMetabolizer} requires DO \% saturation and depth, and
+#' \code{BASE} requires atmospheric pressure. If DO \% saturation is missing,
 #' it will be calculated automatically from DO concentration, water temperature,
 #' and atmospheric pressure. In turn, atmospheric pressure estimates will
-#' be automatically retrieved from NOAA (NCEP), if missing,
-#' for sites within the U.S.A.
+#' be automatically retrieved from NOAA (NCDC), if missing,
+#' for sites anywhere on earth.
 #'
 #' If \code{streamMetabolizer} is being used and
-#' \code{type='bayes'}, discharge data are also required.
+#' \code{type='bayes'}, discharge time series data are also required.
 #' In the absence of such data, they can be estimated from the relationship
-#' between depth (i.e. the vertical distance between streambed and surface) or
+#' between discharge and depth (i.e. the vertical distance between streambed and
+#' surface) or
 #' level (AKA stage; i.e. the vertical distance between some arbitrary datum,
 #' such as sensor
 #' height, and surface), via the \code{zq_curve} parameter.
@@ -56,9 +59,10 @@
 #' found by clicking the "Before modeling stream metabolism..." button on
 #' \url{https://data.streampulse.org}.
 #'
-#' The between-sample interval specified by the \code{interval} parameter is
+#' The between-sample interval specified by the user via the
+#' \code{interval} parameter is
 #' also determined programmatically
-#' for each variable within \code{d}, and is assumed to be the mode
+#' for each variable within \code{d}. It is assumed to be the mode
 #' if the between-sample interval varies within a series. If the
 #' between-sample interval varies across variables, the longest interval is
 #' used for the whole dataset. If the user-specified \code{interval}
@@ -131,9 +135,12 @@
 #' @return returns an S4 object containing a \code{data.frame} formatted for
 #'   the model specified by \code{model} and \code{type}.
 #' @seealso \code{\link{request_data}} for acquiring StreamPULSE data;
-#'   \code{\link{fit_metabolism}} for running models.
+#'   \code{\link{fit_metabolism}} for fitting models.
 #' @export
 #' @examples
+#' streampulse_data = request_data(sitecode='NC_Eno',
+#'     startdate='2016-06-10', enddate='2016-10-23')
+#'
 #' fitdata = prep_metabolism(d=streampulse_data, type='bayes',
 #'     model='streamMetabolizer', interval='15 min',
 #'     rm_flagged=list('Bad Data', 'Questionable'), fillgaps=fillgaps,
@@ -163,7 +170,10 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     # units are m/s and pascals, respectively
 
     # checks
-    if(model=="BASE") type="bayes" #can't use mle mode with BASE
+    if(model=="BASE"){
+        stop('BASE not yet supported', call.=FALSE) ###
+        type="bayes" #can't use mle mode with BASE
+    }
     if(!grepl('\\d+ (min|hour)', interval, perl=TRUE)){ #correct interval format
         stop(paste('Interval must be of the form "length [space] unit"\n\twhere',
             'length is numeric and unit is either "min" or "hour".'), call.=FALSE)
@@ -345,24 +355,6 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     #         call.=FALSE)
     # }
 
-    #correct any negative or 0 depth values (these break streamMetabolizer)
-    if('Depth_m' %in% vd){
-        if(any(na.omit(dd$Depth_m) <= 0)){
-            warning('Depth values <= 0 detected. Replacing with 0.000001.',
-                call.=FALSE)
-            dd$Depth_m[dd$Depth_m <= 0] = 0.000001
-        }
-    }
-
-    #same for discharge
-    if('Discharge_m3s' %in% vd){
-        if(any(na.omit(dd$Discharge_m3s) <= 0)){
-            warning('Discharge values <= 0 detected. Replacing with 0.000001.',
-                call.=FALSE)
-            dd$Discharge_m3s[dd$Discharge_m3s <= 0] = 0.000001
-        }
-    }
-
     # check if desired interval is compatible with sample interval
     int_parts = strsplit(interval, ' ')[[1]] #get num and str components
     desired_int = as.difftime(as.numeric(int_parts[1]),
@@ -410,7 +402,6 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         dd = left_join(alldates, dd, by='DateTime_UTC')
     }
 
-
     #acquire air pressure data if necessary
     missing_DOsat = all(! c('satDO_mgL','DOsat_pct') %in% vd)
     # missing_waterTemp = ! 'WaterTemp_C' %in% vd
@@ -420,7 +411,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
 
     if(need_airPres_for_DOsat | need_airPres_for_Q){
 
-        airpres = try(retrieve_air_pressure(d$sites, dd), silent=TRUE)
+        airpres = try(retrieve_air_pressure(md, dd), silent=TRUE)
         if(class(airpres)=='try-error') {
             warning(paste('Failed to retrieve air pressure data.'), call.=FALSE)
         } else {
@@ -433,6 +424,15 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
             #     xout=which(is.na(dd$AirPres_kPa)))$y
         }
 
+    }
+
+    #correct any negative or 0 depth values (these break streamMetabolizer)
+    if('Depth_m' %in% vd){
+        if(any(na.omit(dd$Depth_m) <= 0)){
+            warning('Depth values <= 0 detected. Replacing with 0.000001.',
+                call.=FALSE)
+            dd$Depth_m[dd$Depth_m <= 0] = 0.000001
+        }
     }
 
     #estimate discharge from depth (or eventually level too) using Z-Q rating curve
@@ -483,6 +483,17 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     # stop('a')
     # dd = dd2
     # }
+
+    #correct any negative or 0 discharge values
+    if('Discharge_m3s' %in% vd){
+        if(any(na.omit(dd$Discharge_m3s) <= 0)){
+            warning('Discharge values <= 0 detected. Replacing with 0.000001.',
+                call.=FALSE)
+            dd$Discharge_m3s[dd$Discharge_m3s <= 0] = 0.000001
+        }
+    }
+
+
 
     # convert UTC to solar time
     dd$solar.time = suppressWarnings(streamMetabolizer::convert_UTC_to_solartime(
