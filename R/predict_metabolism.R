@@ -34,6 +34,7 @@ predict_metabolism = function(model_fit){
             separate(File, c("fileX", "date", "extX"), "_|\\.") %>%
             select(-fileX, -extX) %>% mutate(date=as.Date(date))
     }else{
-        predict_metab(model_fit)
+        predictions = predict_metab(model_fit)
+        return(predictions)
     }
 }

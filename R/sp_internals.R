@@ -94,6 +94,9 @@ retrieve_air_pressure = function(md, dd){
 estimate_discharge = function(Z=NULL, Q=NULL, a=NULL, b=NULL,
     sh=NULL, dd=NULL, fit, plot){
 
+    # dd2 <<- dd
+    # stop('a')
+    # dd = dd2
     # if(is.numeric(sh)){ #then need to calculate depth. based on:
     #https://web.archive.org/web/20170617070623/http://www.onsetcomp.com/files/support/tech-notes/onsetBCAguide.pdf
 
@@ -201,13 +204,23 @@ estimate_discharge = function(Z=NULL, Q=NULL, a=NULL, b=NULL,
 
         #try to fit power model
         if(fit == 'power'){
-            mod = tryCatch(nls(Q ~ (a * Z^b), start=list(a=0.1, b=1)),
-                error=function(e){
+            # mod = tryCatch(nls(Q ~ (a * Z^b), start=list(a=0.1, b=1)),
+            #     error=function(e){
+            #         stop(paste0('Failed to fit rating curve.\n\tThis is worth ',
+            #             'mentioning to Mike: vlahm13@gmail.com.\n\t',
+            #             'Note that you can fit your own curve and then supply\n\t',
+            #             'a and b (of Q=aZ^b) directly.'), call.=FALSE)
+            #     })
+            mod = try(nls(Q ~ (a * Z^b), start=list(a=0.1, b=1)), silent=TRUE)
+            if(class(mod) == 'try-error'){
+                mod = try(nls(Q ~ (a * Z^b), start=list(a=1, b=1)), silent=TRUE)
+                if(class(mod) == 'try-error'){
                     stop(paste0('Failed to fit rating curve.\n\tThis is worth ',
                         'mentioning to Mike: vlahm13@gmail.com.\n\t',
-                        'Note that you can fit your own curve and then supply\n\t',
-                        'a and b (of Q=aZ^b) directly.'), call.=FALSE)
-                })
+                        'Note that you can fit your own curve and then supply',
+                        '\n\ta and b (of Q=aZ^b) directly.'), call.=FALSE)
+                }
+            }
         } else { #try to fit exponential
             if(fit == 'exponential'){
                 mod = tryCatch(nls(Q ~ (a * exp(b * Z)),
@@ -225,9 +238,11 @@ estimate_discharge = function(Z=NULL, Q=NULL, a=NULL, b=NULL,
         }
 
         if(plot == TRUE){
-            plot(Z, Q, xlab='Z sample data (m)', ylab='Q samp. data (cms)',
+            plot(Z, Q, xlab='', ylab='Q samp. data (cms)',
                 las=1, main=paste0('Rating curve fit (', fit, ')'))
-            lines(Z, predict(mod, list(x=Z)))
+            mtext('Z sample data (m)', 1, 2)
+            plotseq = round(seq(Z[1], Z[length(Z)], diff(range(Z))/50), 2)
+            lines(plotseq, predict(mod, list(Z=plotseq)))
         }
 
         params = summary(mod)$parameters
@@ -263,10 +278,21 @@ estimate_discharge = function(Z=NULL, Q=NULL, a=NULL, b=NULL,
     }
 
     if(plot){
-        plot(depth, discharge, xlab=paste(dep_or_lvl, 'series data (m)'),
+        plot(depth, discharge, xlab='',
+            xlim=c(max(min(depth, na.rm=TRUE), 0), max(depth, na.rm=TRUE)),
             ylab='Est. Q (cms)', main='Rating curve prediction', las=1)
+        mtext(paste(dep_or_lvl, 'series data (m)'), 1, 2)
     }
     suppressWarnings(par(defpar))
 
     return(discharge)
 }
+
+create_sm_class = function(){
+
+    streamMetabolizer = setClass("streamMetabolizer",
+        representation(type="character"), contains="data.frame")
+
+    return(streamMetabolizer)
+}
+streamMetabolizer = create_sm_class()

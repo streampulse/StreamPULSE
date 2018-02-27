@@ -242,6 +242,10 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         }
     }
 
+    # d2 <<- d
+    # stop('a')
+    # d = d2
+
     #### Format data for models
     cat(paste("Formatting data for ",model,".\n", sep=""))
     dd = d$data
@@ -314,6 +318,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
 
 
     # dd2 <<- dd; d2 <<- d
+    # stop('a')
     # dd = dd2; d = d2
 
     vd = unique(dd$variable) # variables
@@ -610,11 +615,11 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         BASE = setClass("BASE", contains="data.frame")
         outdata = as(fitdata, "BASE")
     }else if(model=="streamMetabolizer"){
-        fitdata = dplyr::select_(dd, .dots=model_variables)
-        streamMetabolizer = setClass("streamMetabolizer",
-            representation(type="character"), contains="data.frame")
+        fitdata = select_(dd, .dots=model_variables)
+        # streamMetabolizer = create_sm_class()
         outdata = as(fitdata, "streamMetabolizer")
         outdata@type = type
     }
-    outdata
+
+    return(outdata)
 }
