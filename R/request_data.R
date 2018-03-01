@@ -89,6 +89,7 @@ request_data = function(sitecode, startdate=NULL, enddate=NULL, variables=NULL,
 
     #assemble url based on user input
     u = paste0("http://data.streampulse.org/api?sitecode=",sitecode)
+    # u = paste0("localhost:5000/api?sitecode=",sitecode)
     if(!is.null(startdate)) u = paste0(u,"&startdate=",startdate)
     if(!is.null(enddate)) u = paste0(u,"&enddate=",enddate)
     u = paste0(u,"&variables=",paste0(variables, collapse=","))
@@ -102,7 +103,21 @@ request_data = function(sitecode, startdate=NULL, enddate=NULL, variables=NULL,
         r = httr::GET(u, httr::add_headers(Token = token))
     }
     json = httr::content(r, as="text", encoding="UTF-8")
-    d = jsonlite::fromJSON(json)
+
+    #check for errors
+    d = try(jsonlite::fromJSON(json), silent=TRUE)
+    if(class(d) == 'try-error'){
+        stop(paste0('Unable to process request. Are you requesting an\n\t',
+            'Unavailable date range? If not, notify Mike:\n\t',
+            'vlahm13@gmail.com'), call.=FALSE)
+    }
+
+    if(length(d$data) == 1 && d$data == 'USGS_error'){
+        stop(paste0('USGS servers are down. Try again later\n\t',
+            'or omit Depth_m and Discharge_m3s from variables requested.'),
+            call.=FALSE)
+    }
+
     #d = RJSONIO::fromJSON(json) # supposed to take care of NaN
     d$data$DateTime_UTC = as.POSIXct(d$data$DateTime_UTC,tz="UTC")
 
