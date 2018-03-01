@@ -418,7 +418,20 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
 
         airpres = try(retrieve_air_pressure(md, dd), silent=TRUE)
         if(class(airpres)=='try-error') {
-            warning(paste('Failed to retrieve air pressure data.'), call.=FALSE)
+
+            cat('Failed to retrieve air pressure data from NCDC.\n',
+                '\tTrying NCEP. This method is slow and only works in U.S.A.\n')
+
+            airpres = try(retrieve_air_pressure2(md, dd), silent=TRUE)
+            if(class(airpres)=='try-error') {
+
+                warning(paste('Failed to retrieve air pressure data.'),
+                    call.=FALSE)
+            } else {
+                dd = left_join(dd, airpres, by='DateTime_UTC')
+                dd$AirPres_kPa = na.approx(dd$AirPres_kPa, na.rm=FALSE, rule=2)
+            }
+
         } else {
             dd = left_join(dd, airpres, by='DateTime_UTC')
             dd$AirPres_kPa = na.approx(dd$AirPres_kPa, na.rm=FALSE, rule=2)

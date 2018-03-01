@@ -36,7 +36,8 @@ FindandCollect_airpres = function(lat, long, start_datetime, end_datetime) {
         y <- as.data.frame(matrix(NA, nrow = 1, ncol = 12))
         for(j in 1:length(yrs)){
             tf = tempfile()
-            download.file(paste0("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-lite/",yrs[j],"/",USAF,"-",WBAN,"-",yrs[j],".gz"),tf,mode="wb")
+            download.file(paste0("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-lite/",
+                yrs[j],"/",USAF,"-",WBAN,"-",yrs[j],".gz"),tf,mode="wb")
             x = read.table(tf)
             x[x==-9999] = NA
             if(length(which(!is.na(x$V7))) >= 0.9 * length(x$V7)) {
@@ -62,7 +63,7 @@ FindandCollect_airpres = function(lat, long, start_datetime, end_datetime) {
     xx = mutate(xx, air_temp=na.approx(air_temp), air_kPa=na.approx(air_kPa))
     daterng = c(start_datetime, end_datetime)
     xtmp = xx %>% filter(DateTime_UTC>=daterng[1] & DateTime_UTC<=daterng[2])
-    select(xtmp, DateTime_UTC, air_kPa, air_temp)
+    # select(xtmp, DateTime_UTC, air_kPa, air_temp)
     # print(noaa.sites[k,])
     return(select(xtmp, DateTime_UTC, air_kPa, air_temp))
 }
@@ -87,6 +88,44 @@ retrieve_air_pressure = function(md, dd){
 
     df_out = df %>% mutate(AirPres_kPa = air_kPa) %>%
         select(DateTime_UTC, AirPres_kPa) %>% as.data.frame()
+
+    return(df_out)
+}
+
+retrieve_air_pressure2 = function(md, dd){
+
+    # sites2 <<- sites
+    # dd2 <<- dd
+    sites = md
+
+    #format site data for use with geoknife package
+    station = as.data.frame(t(sites[,c('lon','lat')]))
+    station = simplegeom(station)
+
+    years = unique(substr(dd$DateTime_UTC, 1, 4))
+    cat('Acquiring air pressure',
+        'data for', length(years),
+        'year(s).\n\tEach year may take a few minutes.\n')
+
+    #retrieve air pressure data from noaa
+    pres = data.frame(datetime=.POSIXct(character()), pres=numeric())
+    for(i in 1:length(years)){
+
+        fabric = webdata(url=paste0('https://www.esrl.noaa.gov/psd/th',
+            'redds/dodsC/Datasets/ncep.reanalysis/surface/pres.sfc.',
+            years[i], '.nc'), variables='pres')
+        noaa_job = geoknife(stencil=station, fabric=fabric, wait=TRUE)
+        noaa_data = result(noaa_job, with.units=TRUE)
+
+        pres = rbind(pres, noaa_data[,c('DateTime','1')])
+
+        cat('Year', i, 'complete.\n')
+    }
+
+    pres = data.frame(pres)
+
+    df_out = pres %>% mutate(AirPres_kPa = X1 / 1000,
+        DateTime_UTC=DateTime) %>% select(AirPres_kPa, DateTime_UTC)
 
     return(df_out)
 }
