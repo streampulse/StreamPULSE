@@ -259,13 +259,14 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         #get lengths and values for successive repetitions of the same
         #sample interval (using run length encoding)
         dt_by_var = sort(unique(dd$DateTime_UTC[dd$variable == varz[i]]))
+
         run_lengths = rle(diff(as.numeric(dt_by_var)))
         if(length(run_lengths$lengths) != 1){
 
             # if gaps or interval change, get mode interval
             uniqv = unique(run_lengths$values)
-            input_int = uniqv[which.max(tabulate(match(run_lengths$values,
-                uniqv)))] / 60 #this gets mode
+            input_int = as.numeric(names(which.max(tapply(run_lengths$lengths,
+                run_lengths$values, sum)))) / 60
 
             if(any(uniqv %% min(uniqv) != 0)){ #if underlying pattern changes
                 warning(paste0('Sample interval is not consistent for ', varz[i],
