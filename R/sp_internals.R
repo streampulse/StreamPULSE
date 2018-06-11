@@ -303,7 +303,7 @@ estimate_discharge = function(Z=NULL, Q=NULL, a=NULL, b=NULL,
             message(paste0(prop_Z_oob * 100, '% of sensor ',
                 tolower(dep_or_lvl), ' values ',
                 'exceeded Z in the rating curve.\n\tThese have been replaced',
-                'with NA because ignore_oob_Z is set to TRUE.'))
+                ' with NA because ignore_oob_Z is set to TRUE.'))
         } else {
             if(maxD > maxZ){
                 warning(paste0('Max observed ', tolower(dep_or_lvl), ' = ',
