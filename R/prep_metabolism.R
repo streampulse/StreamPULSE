@@ -117,7 +117,8 @@
 #'   include any of the following: Z (a vector of level or depth data), Q (a
 #'   vector of discharge data), a (the first parameter of an existing rating
 #'   curve), b (the second parameter of an existing rating curve),
-#'   sensor_height (the vertical distance between streambed and sensor), fit
+#'   sensor_height (the vertical distance between streambed and sensor,
+#'   in meters), fit
 #'   (the form of the rating curve to predict discharge from and, if Z and Q
 #'   supplied, to fit), ignore_oob_Z (if there are depth or level readings that
 #'   exceed the maximum measured Z value of the rating curve, whether to
