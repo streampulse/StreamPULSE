@@ -50,7 +50,10 @@
 #' in the curve,
 #' high flow discharge estimates can be far off from reality, especially if
 #' the curve's form is power or exponential. In these cases, it's often safest
-#' to use a linear fit, though of course this too will misrepresent reality.
+#' to omit high flow data points from the curve entirely by setting
+#' \code{ignore_oob_Z=TRUE}. In some cases it makes sense to model the curve
+#' with a linear fit, though of course this too will misrepresent reality.
+#' Using \code{fit='linear'} may also result in negative discharge estimates.
 #'
 #' All single-station models assume that, where applicable, variables
 #' represent averages
@@ -115,9 +118,11 @@
 #'   vector of discharge data), a (the first parameter of an existing rating
 #'   curve), b (the second parameter of an existing rating curve),
 #'   sensor_height (the vertical distance between streambed and sensor), fit
-#'   (the form of the rating curve to predict descharge from and, if Z and Q
-#'   supplied, to fit), plot (whether to plot the fitted curve, if applicable,
-#'   as well as predicted discharge). See details for more.
+#'   (the form of the rating curve to predict discharge from and, if Z and Q
+#'   supplied, to fit), ignore_oob_Z (if there are depth or level readings that
+#'   exceed the maximum measured Z value of the rating curve, whether to
+#'   replace these with NA), and plot (whether to plot the fitted curve, if
+#'   applicable, as well as predicted discharge). See details for more.
 #' @param estimate_areal_depth logical;
 #'   Metabolism models expect that input depth time series represent depth
 #'   averaged
@@ -150,7 +155,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     interval='15 min', rm_flagged=list('Bad Data', 'Questionable'),
     fillgaps='interpolation',
     zq_curve=list(sensor_height=NULL, Z=NULL, Q=NULL, a=NULL, b=NULL,
-        fit='power', plot=TRUE),
+        fit='power', ignore_oob_Z=TRUE, plot=TRUE),
     estimate_areal_depth=TRUE, ...){
     # zq_curve=list(Z=NULL, Q=NULL, a=NULL, b=NULL), ...){
 
@@ -217,6 +222,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
                     '"exponential", "linear".'), call.=FALSE)
             }
         }
+        if(!is.null(zq_curve$ignore_oob_Z)) ignore_oob_Z = zq_curve$ignore_oob_Z
         if(!is.null(zq_curve$plot)) plot = zq_curve$plot
 
         # message(paste0('NOTE: You have specified arguments to zq_curve.\n\t',
@@ -464,7 +470,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         cat(paste0('Modeling discharge from rating curve.\n\tCurve will be ',
             'generated from supplied Z and Q samples.\n'))
         dd$Discharge_m3s = estimate_discharge(Z=Z, Q=Q, sh=sensor_height,
-            dd=dd, fit=fit, plot=plot)
+            dd=dd, fit=fit, ignore_oob_Z, plot=plot)
         vd = c(vd, 'Discharge_m3s')
     } else {
         if(ab_supplied){

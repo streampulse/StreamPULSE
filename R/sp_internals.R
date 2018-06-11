@@ -131,7 +131,7 @@ retrieve_air_pressure2 = function(md, dd){
 }
 
 estimate_discharge = function(Z=NULL, Q=NULL, a=NULL, b=NULL,
-    sh=NULL, dd=NULL, fit, plot){
+    sh=NULL, dd=NULL, fit, ignore_oob_Z, plot){
 
     # dd2 <<- dd
     # stop('a')
@@ -296,13 +296,25 @@ estimate_discharge = function(Z=NULL, Q=NULL, a=NULL, b=NULL,
             round(b, 3), '\n'))
         maxZ = round(max(Z, na.rm=TRUE), 2)
         maxD = round(max(depth, na.rm=TRUE), 2)
-        if(maxD > maxZ){
-            warning(paste0('Max observed ', tolower(dep_or_lvl), ' = ',
-                maxD, '. Max observed input Z = ', maxZ, '.\n\tDischarge ',
-                'estimates for ', tolower(dep_or_lvl), ' > ', maxZ,
-                ' may be untrustworthy.'), call.=FALSE)
-        }
+        prop_Z_oob = sum(depth > maxZ, na.rm=TRUE) / length(depth)
 
+        if(ignore_oob_Z){
+            depth[depth > maxZ] = NA
+            message(paste0(prop_Z_oob * 100, '% of sensor ',
+                tolower(dep_or_lvl), ' values ',
+                'exceeded Z in the rating curve. These have been replaced with',
+                'NA because ignore_oob_Z is set to TRUE.'))
+        } else {
+            if(maxD > maxZ){
+                warning(paste0('Max observed ', tolower(dep_or_lvl), ' = ',
+                    maxD, '. Max observed input Z = ', maxZ, '.\n\tDischarge ',
+                    'estimates for ', tolower(dep_or_lvl), ' > ', maxZ,
+                    ' (', prop_Z_oob * 100, '% of observations)',
+                    ' may be untrustworthy if using power or exponential ',
+                    'fit.\n\tSet ',
+                    'ignore_oob_Z=TRUE if this bothers you.'), call.=FALSE)
+            }
+        }
     } #else a and b have been supplied directly
 
     #estimate discharge using a and b params from rating curve

@@ -7,8 +7,8 @@
 prep_metabolism(d, model = "streamMetabolizer", type = "bayes",
   interval = "15 min", rm_flagged = list("Bad Data", "Questionable"),
   fillgaps = "interpolation", zq_curve = list(sensor_height = NULL, Z =
-  NULL, Q = NULL, a = NULL, b = NULL, fit = "power", plot = TRUE),
-  estimate_areal_depth = TRUE, ...)
+  NULL, Q = NULL, a = NULL, b = NULL, fit = "power", ignore_oob_Z = TRUE, plot =
+  TRUE), estimate_areal_depth = TRUE, ...)
 }
 \arguments{
 \item{d}{the output of \code{request_data},
@@ -53,9 +53,11 @@ include any of the following: Z (a vector of level or depth data), Q (a
 vector of discharge data), a (the first parameter of an existing rating
 curve), b (the second parameter of an existing rating curve),
 sensor_height (the vertical distance between streambed and sensor), fit
-(the form of the rating curve to predict descharge from and, if Z and Q
-supplied, to fit), plot (whether to plot the fitted curve, if applicable,
-as well as predicted discharge). See details for more.}
+(the form of the rating curve to predict discharge from and, if Z and Q
+supplied, to fit), ignore_oob_Z (if there are depth or level readings that
+exceed the maximum measured Z value of the rating curve, whether to
+replace these with NA), and plot (whether to plot the fitted curve, if
+applicable, as well as predicted discharge). See details for more.}
 
 \item{estimate_areal_depth}{logical;
 Metabolism models expect that input depth time series represent depth
@@ -128,7 +130,10 @@ high flow conditions, yet without accounting for these conditions
 in the curve,
 high flow discharge estimates can be far off from reality, especially if
 the curve's form is power or exponential. In these cases, it's often safest
-to use a linear fit, though of course this too will misrepresent reality.
+to omit high flow data points from the curve entirely by setting
+\code{ignore_oob_Z=TRUE}. In some cases it makes sense to model the curve
+with a linear fit, though of course this too will misrepresent reality.
+Using \code{fit='linear'} may also result in negative discharge estimates.
 
 All single-station models assume that, where applicable, variables
 represent averages
