@@ -296,14 +296,14 @@ estimate_discharge = function(Z=NULL, Q=NULL, a=NULL, b=NULL,
             round(b, 3), '\n'))
         maxZ = round(max(Z, na.rm=TRUE), 2)
         maxD = round(max(depth, na.rm=TRUE), 2)
-        prop_Z_oob = sum(depth > maxZ, na.rm=TRUE) / length(depth)
+        prop_Z_oob = round(sum(depth > maxZ, na.rm=TRUE) / length(depth), 1)
 
         if(ignore_oob_Z){
             depth[depth > maxZ] = NA
             message(paste0(prop_Z_oob * 100, '% of sensor ',
                 tolower(dep_or_lvl), ' values ',
-                'exceeded Z in the rating curve. These have been replaced with',
-                'NA because ignore_oob_Z is set to TRUE.'))
+                'exceeded Z in the rating curve.\n\tThese have been replaced',
+                'with NA because ignore_oob_Z is set to TRUE.'))
         } else {
             if(maxD > maxZ){
                 warning(paste0('Max observed ', tolower(dep_or_lvl), ' = ',

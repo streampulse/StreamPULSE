@@ -208,7 +208,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     if(using_zq_curve){
 
         #unpack arguments supplied to zq_curve
-        sensor_height = Z = Q = a = b = fit = plot = NULL
+        sensor_height = Z = Q = a = b = fit = ignore_oob_Z = plot = NULL
         if(!is.null(zq_curve$sensor_height)){
             sensor_height = zq_curve$sensor_height
         }
@@ -471,14 +471,15 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         cat(paste0('Modeling discharge from rating curve.\n\tCurve will be ',
             'generated from supplied Z and Q samples.\n'))
         dd$Discharge_m3s = estimate_discharge(Z=Z, Q=Q, sh=sensor_height,
-            dd=dd, fit=fit, ignore_oob_Z, plot=plot)
+            dd=dd, fit=fit, ignore_oob_Z=ignore_oob_Z, plot=plot)
         vd = c(vd, 'Discharge_m3s')
     } else {
         if(ab_supplied){
             cat(paste0('Modeling discharge from rating curve determined by',
                 '\n\tsupplied a and b parameters.\n'))
             dd$Discharge_m3s = estimate_discharge(a=a, b=b,
-                sh=sensor_height, dd=dd, fit=fit, plot=plot)
+                sh=sensor_height, dd=dd, fit=fit, ignore_oob_Z=ignore_oob_Z,
+                plot=plot)
             vd = c(vd, 'Discharge_m3s')
         }
         # if(ab_supplied & missing_depth){
