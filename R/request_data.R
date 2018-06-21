@@ -118,6 +118,10 @@ request_data = function(sitecode, startdate=NULL, enddate=NULL, variables=NULL,
             call.=FALSE)
     }
 
+    if(length(d) == 1 && ! is.null(d$error)){
+        stop(d$error, call.=FALSE)
+    }
+
     #d = RJSONIO::fromJSON(json) # supposed to take care of NaN
     d$data$DateTime_UTC = as.POSIXct(d$data$DateTime_UTC,tz="UTC")
 
