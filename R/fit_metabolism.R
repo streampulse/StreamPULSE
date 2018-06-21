@@ -25,8 +25,9 @@
 #' @author Mike Vlah, \email{vlahm13@gmail.com}
 #' @author Aaron Berdanier
 #' @param fitdata the output of \link{prep_metabolism}.
-#' @return returns the output of \code{streamMetabolizer}'s \code{metab}
-#'   function.
+#' @return returns a list containing the output of \code{streamMetabolizer}'s
+#'   \code{metab} function (fit) and of \code{streamMetabolizer}'s
+#'   \code{predict_metab} function (predictions).
 #' @seealso \code{\link{request_data}} for acquiring StreamPULSE data;
 #'   \code{\link{prep_metabolism}} for organizing data and acquiring additional
 #'   variables.
@@ -92,8 +93,8 @@ fit_metabolism = function(fitdata){
         }
 
         #fit model
-        modfit = metab(specs=modspecs, data=fitdata)
-        return(modfit)
+        model_fit = metab(specs=modspecs, data=fitdata)
+        # return(model_fit)
 
     }else if(model=="BASE"){
         tmp = tempdir() # the temp dir for the data and model
@@ -126,6 +127,20 @@ fit_metabolism = function(fitdata){
         cat("Estimating metabolism with BASE.\n")
         # found in BASE_functions.R
         fit_BASE(directory=directory, interval=900, n.iter=30000, n.burnin=15000)
-        structure(list(output_directory = directory), class="BASE") # return the BASE directory with class BASE
+        # structure(list(output_directory = directory), class="BASE") # return the BASE directory with class BASE
+        model_fit = list(output_directory=directory)
+        attr(model_fit, 'class') = 'BASE'
+    }
+
+    #extract predictions from fit object (this block was formerly the
+    # predict_metabolism function)
+    if(class(model_fit)=="BASE"){
+        directory = model_fit$output_directory
+        read.csv(paste0(directory,"/output/BASE_results.csv")) %>%
+            separate(File, c("fileX", "date", "extX"), "_|\\.") %>%
+            select(-fileX, -extX) %>% mutate(date=as.Date(date))
+    }else{
+        predictions = predict_metab(model_fit)
+        return(list(predictions=predictions, fit=model_fit))
     }
 }
