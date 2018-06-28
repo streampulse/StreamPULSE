@@ -208,7 +208,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     if(using_zq_curve){
 
         #unpack arguments supplied to zq_curve
-        sensor_height = Z = Q = a = b = fit = ignore_oob_Z = plot = NULL
+        sensor_height = Z = Q = a = b = fit = ignore_oob_Z = zqplot = NULL
         if(!is.null(zq_curve$sensor_height)){
             sensor_height = zq_curve$sensor_height
         }
@@ -224,7 +224,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
             }
         }
         if(!is.null(zq_curve$ignore_oob_Z)) ignore_oob_Z = zq_curve$ignore_oob_Z
-        if(!is.null(zq_curve$plot)) plot = zq_curve$plot
+        if(!is.null(zq_curve$plot)) zqplot = zq_curve$plot
 
         # message(paste0('NOTE: You have specified arguments to zq_curve.\n\t',
         #     'These are only needed if time-series data for discharge cannot',
@@ -254,7 +254,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     # d = d2
 
     #### Format data for models
-    cat(paste("Formatting data for ",model,".\n", sep=""))
+    cat(paste("Formatting data for ", model, ".\n", sep=""))
     dd = d$data
 
     #check for consistent sample interval (including cases where there are gaps
@@ -471,7 +471,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         cat(paste0('Modeling discharge from rating curve.\n\tCurve will be ',
             'generated from supplied Z and Q samples.\n'))
         dd$Discharge_m3s = estimate_discharge(Z=Z, Q=Q, sh=sensor_height,
-            dd=dd, fit=fit, ignore_oob_Z=ignore_oob_Z, plot=plot)
+            dd=dd, fit=fit, ignore_oob_Z=ignore_oob_Z, plot=zqplot)
         vd = c(vd, 'Discharge_m3s')
     } else {
         if(ab_supplied){
@@ -479,7 +479,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
                 '\n\tsupplied a and b parameters.\n'))
             dd$Discharge_m3s = estimate_discharge(a=a, b=b,
                 sh=sensor_height, dd=dd, fit=fit, ignore_oob_Z=ignore_oob_Z,
-                plot=plot)
+                plot=zqplot)
             vd = c(vd, 'Discharge_m3s')
         }
         # if(ab_supplied & missing_depth){
@@ -643,5 +643,22 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         outdata@type = type
     }
 
-    return(outdata)
+    # #extract start and end date from input data (will be used to determine
+    # #whether this model should be considered for
+    # #inclusion on the data portal as the best model for this site and year)
+    # mod_startdt = d$data$DateTime_UTC[1]
+    # mod_enddt = d$data$DateTime_UTC[nrow(d$data)]
+    # dtbounds = c(mod_startdt, mod_enddt)
+    # attr(dtbounds, 'tzone') = 'UTC'
+
+    #return list of specs passed on from request_date,
+    #as well as new list of specs passed into this function
+    out = list(data=outdata,
+        specs=append(d$specs,
+            list(model=model, type=type, interval=interval,
+                rm_flagged=paste0(unlist(rm_flagged), collapse=','),
+                fillgaps=fillgaps, used_rating_curve=using_zq_curve,
+                estimate_areal_depth=estimate_areal_depth)))
+
+    return(out)
 }

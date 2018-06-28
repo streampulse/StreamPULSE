@@ -346,4 +346,51 @@ create_sm_class = function(){
 
     return(streamMetabolizer)
 }
+
 streamMetabolizer = create_sm_class()
+
+extract_model_details = function(fit, preds, specs, year){
+
+    time_now = Sys.time()
+    attr(time_now, 'tzone') = 'UTC'
+
+    rmse = sqrt(mean((fit@data$DO.mod - fit@data$DO.obs)^2, na.rm=TRUE))
+
+    gpp_upperCI = abs(preds$GPP.upper - preds$GPP)
+    gpp_lowerCI = abs(preds$GPP.lower - preds$GPP)
+    gpp_95ci = mean(c(gpp_upperCI, gpp_lowerCI), na.rm=TRUE)
+    er_upperCI = abs(preds$ER.upper - preds$ER)
+    er_lowerCI = abs(preds$ER.lower - preds$ER)
+    er_95ci = mean(c(er_upperCI, er_lowerCI), na.rm=TRUE)
+
+    prop_pos_er = sum(preds$ER > 0, na.rm=TRUE) / length(preds$ER)
+    prop_neg_gpp = sum(preds$GPP < 0, na.rm=TRUE) / length(preds$GPP)
+
+    pearson = cor(fit@fit$daily$ER_mean, fit@fit$daily$K600_daily_mean,
+        use='na.or.complete')
+
+    coverage = as.numeric(as.Date(preds$date[nrow(preds)]) -
+            as.Date(preds$date[1]))
+
+    more_specs = mm_parse_name(fit@specs$model_name)
+
+    rc = ifelse(specs$region == 'NC' && specs$site != 'Eno', TRUE, FALSE)
+
+    model_deets = data.frame(region=specs$region,
+        site=specs$site, start_date=as.Date(preds$date[1]),
+        end_date=as.Date(preds$date[nrow(preds)]),
+        requested_variables=specs$requested_variables,
+        year=year, run_finished=time_now, model=specs$model,
+        method=more_specs$type,
+        engine=fit@specs$engine, rm_flagged=specs$rm_flagged,
+        used_rating_curve=specs$used_rating_curve, pool=more_specs$pool_K600,
+        proc_err=more_specs$err_proc_iid, obs_err=more_specs$err_obs_iid,
+        proc_acor=more_specs$err_proc_acor, ode_method=more_specs$ode_method,
+        deficit_src=more_specs$deficit_src, interv=specs$interval,
+        fillgaps=specs$fillgaps,
+        estimate_areal_depth=specs$estimate_areal_depth, O2_GOF=rmse,
+        GPP_95CI=gpp_95ci, ER_95CI=er_95ci, prop_pos_ER=prop_pos_er,
+        prop_neg_GPP=prop_neg_gpp, ER_K600_cor=pearson, coverage=coverage)
+
+    return(model_deets)
+}

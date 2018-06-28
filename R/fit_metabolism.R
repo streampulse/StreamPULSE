@@ -24,7 +24,7 @@
 #'
 #' @author Mike Vlah, \email{vlahm13@gmail.com}
 #' @author Aaron Berdanier
-#' @param fitdata the output of \link{prep_metabolism}.
+#' @param d the output of \link{prep_metabolism}.
 #' @return returns a list containing the output of \code{streamMetabolizer}'s
 #'   \code{metab} function (fit) and of \code{streamMetabolizer}'s
 #'   \code{predict_metab} function (predictions).
@@ -58,7 +58,10 @@
 #'     to=max(addis), length.out=7)
 #'
 #' modelfit = metab(specs=modspecs, data=fitdata)
-fit_metabolism = function(fitdata){
+fit_metabolism = function(d){
+
+    fitdata = d$data
+
     # check class of fitdata to determine which model to fit
     model = class(fitdata)
     if(model=="streamMetabolizer") model_type = fitdata@type
@@ -132,15 +135,76 @@ fit_metabolism = function(fitdata){
         attr(model_fit, 'class') = 'BASE'
     }
 
-    #extract predictions from fit object (this block was formerly the
-    # predict_metabolism function)
+    #extract predictions from fit object (this block was formerly a
+    # separate predict_metabolism function)
     if(class(model_fit)=="BASE"){
         directory = model_fit$output_directory
-        read.csv(paste0(directory,"/output/BASE_results.csv")) %>%
+        preds = read.csv(paste0(directory,"/output/BASE_results.csv")) %>%
             separate(File, c("fileX", "date", "extX"), "_|\\.") %>%
             select(-fileX, -extX) %>% mutate(date=as.Date(date))
+        #develop stuff here if we ever use BASE again
     }else{
         predictions = predict_metab(model_fit)
-        return(list(predictions=predictions, fit=model_fit))
+        output = list(predictions=predictions, fit=model_fit)
     }
+
+    #if model covers <= one calendar year...
+    # ppp <<- predictions
+    # fff <<- model_fit
+    mod_startyr = substr(d$specs$startdate, 1, 4)
+    mod_endyr = substr(d$specs$enddate, 1, 4)
+    if(mod_startyr == mod_endyr){
+
+        #assemble model spec retrieval API call
+        cat(paste0('Checking StreamPULSE database for model results to\n\t',
+            'compare with the model you just fit.'))
+
+        #LOCALHOST
+        u = paste0("localhost:5000/api/model_details?region=",
+            d$specs$region, "&site=", d$specs$site, "&year=", mod_startyr)
+        # u = paste0("localhost:5000/api/model_details?region=NC",
+        #     "&site=Eno&year=2019")
+
+        #retrieve specs for the current best model
+        if(d$specs$token == 'none'){
+            r = httr::GET(u)
+        }else{
+            r = httr::GET(u, httr::add_headers(Token=d$specs$token))
+        }
+        json = httr::content(r, as="text", encoding="UTF-8")
+        modspec = try(jsonlite::fromJSON(json), silent=TRUE)
+
+        #check for errors
+        if(class(modspec) == 'try-error'){
+            cat(paste0('Failed to retrieve results from StreamPULSE.\n\t',
+                'Returning your model fit and predictions.'))
+            return(output)
+        }
+        if(length(modspec) == 1 && ! is.null(modspec$error)){
+            return(output) #this line should never run; just here for later
+        }
+
+        #extract results related to model run and performance
+        deets = extract_model_details(model_fit, predictions, d$specs,
+            mod_startyr)
+        # ddd <<- deets
+
+        if(length(modespec$specs) == 0){
+            cat(paste0("No model fits detected for this site and calendar year",
+                ",\n\tso this is the best fit by default!\n\t",
+                "Pushing your results to the StreamPULSE database.\n\t"))
+            #send via API
+            u2 = paste0("localhost:5000/api/model_upload?region=",
+                region, "&site=", site, "&year=", mod_startyr)
+            httr::POST(url=u2,
+            return(output)
+        }
+
+        mmm <<- modspec
+
+
+
+
+    }
+
 }
