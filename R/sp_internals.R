@@ -374,7 +374,8 @@ extract_model_details = function(fit, preds, specs, year){
 
     more_specs = mm_parse_name(fit@specs$model_name)
 
-    rc = ifelse(specs$region == 'NC' && specs$site != 'Eno', TRUE, FALSE)
+    # rc = ifelse(specs$region == 'NC' && specs$site != 'Eno', TRUE, FALSE)
+    rc = ifelse(specs$region == 'NC' && specs$site != 'Eno', 1, 0)
 
     model_deets = data.frame(region=specs$region,
         site=specs$site, start_date=as.Date(preds$date[1]),
@@ -383,14 +384,20 @@ extract_model_details = function(fit, preds, specs, year){
         year=year, run_finished=time_now, model=specs$model,
         method=more_specs$type,
         engine=fit@specs$engine, rm_flagged=specs$rm_flagged,
-        used_rating_curve=specs$used_rating_curve, pool=more_specs$pool_K600,
-        proc_err=more_specs$err_proc_iid, obs_err=more_specs$err_obs_iid,
-        proc_acor=more_specs$err_proc_acor, ode_method=more_specs$ode_method,
+        # used_rating_curve=as.numeric(specs$used_rating_curve),
+        used_rating_curve=specs$used_rating_curve,
+        pool=more_specs$pool_K600,
+        proc_err=more_specs$err_proc_iid,
+        obs_err=more_specs$err_obs_iid,
+        proc_acor=more_specs$err_proc_acor,
+        ode_method=more_specs$ode_method,
         deficit_src=more_specs$deficit_src, interv=specs$interval,
         fillgaps=specs$fillgaps,
-        estimate_areal_depth=specs$estimate_areal_depth, O2_GOF=rmse,
+        estimate_areal_depth=specs$estimate_areal_depth,
+        O2_GOF=rmse,
         GPP_95CI=gpp_95ci, ER_95CI=er_95ci, prop_pos_ER=prop_pos_er,
-        prop_neg_GPP=prop_neg_gpp, ER_K600_cor=pearson, coverage=coverage)
+        prop_neg_GPP=prop_neg_gpp, ER_K600_cor=pearson, coverage=coverage,
+        stringsAsFactors=FALSE)
 
     return(model_deets)
 }

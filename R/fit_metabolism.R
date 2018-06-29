@@ -160,7 +160,7 @@ fit_metabolism = function(d){
             'compare with the model you just fit.'))
 
         #LOCALHOST
-        u = paste0("localhost:5000/api/model_details?region=",
+        u = paste0("localhost:5000/api/model_details_download?region=",
             d$specs$region, "&site=", d$specs$site, "&year=", mod_startyr)
         # u = paste0("localhost:5000/api/model_details?region=NC",
         #     "&site=Eno&year=2019")
@@ -176,7 +176,7 @@ fit_metabolism = function(d){
 
         #check for errors
         if(class(modspec) == 'try-error'){
-            cat(paste0('Failed to retrieve results from StreamPULSE.\n\t',
+            cat(paste0('Failed to retrieve data from StreamPULSE.\n\t',
                 'Returning your model fit and predictions.'))
             return(output)
         }
@@ -189,18 +189,59 @@ fit_metabolism = function(d){
             mod_startyr)
         # ddd <<- deets
 
+        #if no model data on server, push this model up
         if(length(modespec$specs) == 0){
             cat(paste0("No model fits detected for this site and calendar year",
                 ",\n\tso this is the best fit by default!\n\t",
                 "Pushing your results to the StreamPULSE database.\n\t"))
-            #send via API
-            u2 = paste0("localhost:5000/api/model_upload?region=",
-                region, "&site=", site, "&year=", mod_startyr)
-            httr::POST(url=u2,
+
+            #first push model details to database
+            u2 = paste0("localhost:5000/api/model_details_upload")
+            o = httr::POST(url=u2, body=deets, encode='form') #send data
+
+            jsono = httr::content(o, as="text", encoding="UTF-8") #get response
+            oo = try(jsonlite::fromJSON(jsono), silent=TRUE)
+
+            #check for errors
+            if(class(oo) == 'try-error' || oo$callback != 'success'){
+                cat(paste0('Failed to push data to StreamPULSE.\n\t',
+                    'Returning your model fit and predictions.'))
+                return(output)
+            }
+
+            #then save model output and predictions to temp files as RDS
+            data_daily = model_fit@data_daily
+            data = model_fit@data
+            fit = model_fit@fit
+            mod_out = list('data_daily'=data_daily, 'data'=data, 'fit'=fit)
+            tmp1 = tempfile()
+            saveRDS(mod_out, file=tmp1)
+            tmp2 = tempfile()
+            saveRDS(predictions, file=tmp2)
+
+            #then push those RDS files to server
+            file_id = paste(deets$region, deets$site, '2019', sep='_')
+            # file_id = paste(deets$region, deets$site, deets$year, sep='_')
+            u3 = paste0("localhost:5000/api/model_upload")
+            o = httr::POST(url=u3,
+                body=list(modOut=httr::upload_file(tmp1),
+                    predictions=httr::upload_file(tmp2)),
+                httr::add_headers(file_id=file_id))
+
+            jsono = httr::content(o, as="text", encoding="UTF-8") #get response
+            oo = try(jsonlite::fromJSON(jsono), silent=TRUE)
+
+            if(class(oo) == 'try-error' || oo$callback != 'success'){
+                cat(paste0('Failed to push data to StreamPULSE.\n\t',
+                    'Returning your model fit and predictions.'))
+                return(output)
+            }
+
+            cat('Done!')
             return(output)
         }
 
-        mmm <<- modspec
+        # mmm <<- modspec
 
 
 
