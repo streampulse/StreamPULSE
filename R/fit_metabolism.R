@@ -198,30 +198,46 @@ fit_metabolism = function(d){
     #if no model data on server, push this model up
     if(length(modspec$specs) == 0){
         cat(paste0("No model fits detected for this site and calendar year",
-            ",\n\tso this is the best fit by default!\n\t",
-            "Pushing your results to the StreamPULSE database.\n\t"))
+            ",\n\tso yours is the best fit by default!\n\t",
+            "Pushing your results to the StreamPULSE database\n\t",
+            "and returning model fit and predictions."))
+        # push_model_to_server(output=output, deets=deets, year=mod_startyr)
         push_model_to_server(output=output, deets=deets)
         return(output)
     }
 
     #compare this model to the current best
+    this_model_pen = get_model_penalty(deets)
+    best_model_pen = get_model_penalty(modspec$specs)
 
-    pen1 = deets$prop_pos_ER
-    pen2 = deets$prop_neg_GPP
-    R2 = abs(deets$ER_K600_cor)
-    pen3 = (R2 >= 0 & R2 <= 0.5) * 0 +
-        (R2 > 0.5 & R2 <= 1) * scales::rescale(R2, 0:1, c(0.5,1))
-    kmax = max(model_fit@fit$daily$K600_daily_mean, na.rm=TRUE)
-    x = seq(30,100,0.1)
-    y =
-    pen4 = (kmax >= 0 & kmax < 30) * 0 +
-        (kmax >= 30 & kmax < 50) * scales::rescale(kmax, c(0,0.2), c(30,50)) +
-        (kmax >= 50 & kmax <= 100) * scales::rescale(kmax, c(0.2,1), c(50,100))
+    mods_equal = this_model_pen == best_model_pen
+    this_mod_better = this_model_pen < best_model_pen
+    pen_dif = this_model_pen - best_model_pen
+    coverage_dif = deets$coverage - modspec$specs$coverage
+
+    if(mods_equal){
+        if(coverage_dif > 0){ #this model has better coverage
+            cat(paste0("Your model outperformed the best one on file!\n\t",
+                "Pushing your results to the StreamPULSE database\n\t",
+                "and returning your model fit and predictions."))
+            push_model_to_server(output=output, deets=deets)
+        } else {
+            cat(paste0("Your model is just as good as the best one on file.\n\t",
+                "Returning your model fit and predictions."))
+        }
+        return(output)
+    }
+
+    #OI! COVERAGE SHOULD NOT BE BASED SOLELY ON START AND END DATE, BUT ALSO NA!
 
 
+    if(this_mod_better && coverage_dif > -25){
+        cat(paste0("Your model outperformed the best one on file!\n\t",
+            "Pushing your results to the StreamPULSE database\n\t",
+            "and returning your model fit and predictions."))
 
-    modspec$specs$prop_pos_ER
+    }
 
-    mmm <<- modspec
+    # mmm <<- modspec
 
 }

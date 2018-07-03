@@ -377,6 +377,8 @@ extract_model_details = function(fit, preds, specs, year){
     # rc = ifelse(specs$region == 'NC' && specs$site != 'Eno', TRUE, FALSE)
     rc = ifelse(specs$region == 'NC' && specs$site != 'Eno', 1, 0)
 
+    kmax = max(fit@fit$daily$K600_daily_mean, na.rm=TRUE)
+
     model_deets = data.frame(region=specs$region,
         site=specs$site, start_date=as.Date(preds$date[1]),
         end_date=as.Date(preds$date[nrow(preds)]),
@@ -397,6 +399,7 @@ extract_model_details = function(fit, preds, specs, year){
         O2_GOF=rmse,
         GPP_95CI=gpp_95ci, ER_95CI=er_95ci, prop_pos_ER=prop_pos_er,
         prop_neg_GPP=prop_neg_gpp, ER_K600_cor=pearson, coverage=coverage,
+        kmax=kmax,
         stringsAsFactors=FALSE)
 
     return(model_deets)
@@ -419,9 +422,9 @@ push_model_to_server = function(output, deets){
     }
 
     #then save model output and predictions to temp files as RDS
-    data_daily = output$model_fit@data_daily
-    data = output$model_fit@data
-    fit = output$model_fit@fit
+    data_daily = output$fit@data_daily
+    data = output$fit@data
+    fit = output$fit@fit
     mod_out = list('data_daily'=data_daily, 'data'=data, 'fit'=fit)
     tmp1 = tempfile()
     saveRDS(mod_out, file=tmp1)
@@ -429,7 +432,7 @@ push_model_to_server = function(output, deets){
     saveRDS(output$predictions, file=tmp2)
 
     #then push those RDS files to server
-    file_id = paste(deets$region, deets$site, '2019', sep='_')
+    file_id = paste(deets$region, deets$site, deets$year, sep='_')
     # file_id = paste(deets$region, deets$site, deets$year, sep='_')
     u3 = paste0("localhost:5000/api/model_upload")
     o = httr::POST(url=u3,
@@ -447,3 +450,30 @@ push_model_to_server = function(output, deets){
     }
 }
 
+get_model_penalty = function(z){
+
+    #proportion-out-of-bounds estimates translate directly into penalties
+    pen1 = z$prop_pos_ER
+    pen2 = z$prop_neg_GPP
+
+    #define ER-K600 correlation penalty according to a linear function
+    R2 = abs(z$ER_K600_cor)
+    x=c(0.5, 1); y=0:1
+    m = lm(y ~ x)
+    pen3 = (R2 >= 0 & R2 <= 0.5) * 0 + #no penalty if < 0.5
+        (R2 > 0.5 & R2 <= 1) * unname(predict(m, data.frame(x=R2)))
+
+    #define kmax penalty according to a cubic function
+    kmax = z$kmax
+    x = c(45, 60, 80, 90); y = c(0, .5, .9, 1)
+    m2 = lm(y ~ x + I(x^2) + I(x^3))
+    pen4 = (kmax < 0) * 100 + #K600 should never be negative
+        (kmax >= 0 & kmax < 45) * 0 + #no penalty if < 45
+        (kmax >= 45 & kmax <= 90) * unname(predict(m2, data.frame(x=kmax))) +
+        (kmax > 90) * 100
+
+    #average all penalties
+    pen_overall = mean(c(pen1, pen2, pen3, pen4))
+
+    return(pen_overall)
+}
