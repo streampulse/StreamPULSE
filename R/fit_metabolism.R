@@ -148,104 +148,80 @@ fit_metabolism = function(d){
         output = list(predictions=predictions, fit=model_fit)
     }
 
-    #if model covers <= one calendar year...
-    # ppp <<- predictions
-    # fff <<- model_fit
+    #if model covers <= one calendar year, it's eligible for inclusion
+    #on the data portal; otherwise just return results to user
+
+    ppp <<- predictions
+    fff <<- model_fit
+
     mod_startyr = substr(d$specs$startdate, 1, 4)
     mod_endyr = substr(d$specs$enddate, 1, 4)
-    if(mod_startyr == mod_endyr){
-
-        #assemble model spec retrieval API call
-        cat(paste0('Checking StreamPULSE database for model results to\n\t',
-            'compare with the model you just fit.'))
-
-        #LOCALHOST
-        u = paste0("localhost:5000/api/model_details_download?region=",
-            d$specs$region, "&site=", d$specs$site, "&year=", mod_startyr)
-        # u = paste0("localhost:5000/api/model_details?region=NC",
-        #     "&site=Eno&year=2019")
-
-        #retrieve specs for the current best model
-        if(d$specs$token == 'none'){
-            r = httr::GET(u)
-        }else{
-            r = httr::GET(u, httr::add_headers(Token=d$specs$token))
-        }
-        json = httr::content(r, as="text", encoding="UTF-8")
-        modspec = try(jsonlite::fromJSON(json), silent=TRUE)
-
-        #check for errors
-        if(class(modspec) == 'try-error'){
-            cat(paste0('Failed to retrieve data from StreamPULSE.\n\t',
-                'Returning your model fit and predictions.'))
-            return(output)
-        }
-        if(length(modspec) == 1 && ! is.null(modspec$error)){
-            return(output) #this line should never run; just here for later
-        }
-
-        #extract results related to model run and performance
-        deets = extract_model_details(model_fit, predictions, d$specs,
-            mod_startyr)
-        # ddd <<- deets
-
-        #if no model data on server, push this model up
-        if(length(modespec$specs) == 0){
-            cat(paste0("No model fits detected for this site and calendar year",
-                ",\n\tso this is the best fit by default!\n\t",
-                "Pushing your results to the StreamPULSE database.\n\t"))
-
-            #first push model details to database
-            u2 = paste0("localhost:5000/api/model_details_upload")
-            o = httr::POST(url=u2, body=deets, encode='form') #send data
-
-            jsono = httr::content(o, as="text", encoding="UTF-8") #get response
-            oo = try(jsonlite::fromJSON(jsono), silent=TRUE)
-
-            #check for errors
-            if(class(oo) == 'try-error' || oo$callback != 'success'){
-                cat(paste0('Failed to push data to StreamPULSE.\n\t',
-                    'Returning your model fit and predictions.'))
-                return(output)
-            }
-
-            #then save model output and predictions to temp files as RDS
-            data_daily = model_fit@data_daily
-            data = model_fit@data
-            fit = model_fit@fit
-            mod_out = list('data_daily'=data_daily, 'data'=data, 'fit'=fit)
-            tmp1 = tempfile()
-            saveRDS(mod_out, file=tmp1)
-            tmp2 = tempfile()
-            saveRDS(predictions, file=tmp2)
-
-            #then push those RDS files to server
-            file_id = paste(deets$region, deets$site, '2019', sep='_')
-            # file_id = paste(deets$region, deets$site, deets$year, sep='_')
-            u3 = paste0("localhost:5000/api/model_upload")
-            o = httr::POST(url=u3,
-                body=list(modOut=httr::upload_file(tmp1),
-                    predictions=httr::upload_file(tmp2)),
-                httr::add_headers(file_id=file_id))
-
-            jsono = httr::content(o, as="text", encoding="UTF-8") #get response
-            oo = try(jsonlite::fromJSON(jsono), silent=TRUE)
-
-            if(class(oo) == 'try-error' || oo$callback != 'success'){
-                cat(paste0('Failed to push data to StreamPULSE.\n\t',
-                    'Returning your model fit and predictions.'))
-                return(output)
-            }
-
-            cat('Done!')
-            return(output)
-        }
-
-        # mmm <<- modspec
-
-
-
-
+    if(mod_startyr != mod_endyr){
+        return(output)
     }
+
+    #assemble model spec retrieval API call
+    cat(paste0('Checking StreamPULSE database for model results to\n\t',
+        'compare with the model you just fit.'))
+
+    #LOCALHOST
+    u = paste0("localhost:5000/api/model_details_download?region=",
+        d$specs$region, "&site=", d$specs$site, "&year=", mod_startyr)
+    # u = paste0("localhost:5000/api/model_details?region=NC",
+    #     "&site=Eno&year=2019")
+
+    #retrieve specs for the current best model
+    if(d$specs$token == 'none'){
+        r = httr::GET(u)
+    }else{
+        r = httr::GET(u, httr::add_headers(Token=d$specs$token))
+    }
+    json = httr::content(r, as="text", encoding="UTF-8")
+    modspec = try(jsonlite::fromJSON(json), silent=TRUE)
+
+    #check for errors
+    if(class(modspec) == 'try-error'){
+        cat(paste0('Failed to retrieve data from StreamPULSE.\n\t',
+            'Returning your model fit and predictions.'))
+        return(output)
+    }
+    if(length(modspec) == 1 && ! is.null(modspec$error)){
+        return(output) #this line should never run; just here for later
+    }
+
+    #extract results related to current model run and performance
+    deets = extract_model_details(model_fit, predictions, d$specs,
+        mod_startyr)
+
+    ddd <<- deets
+
+    #if no model data on server, push this model up
+    if(length(modspec$specs) == 0){
+        cat(paste0("No model fits detected for this site and calendar year",
+            ",\n\tso this is the best fit by default!\n\t",
+            "Pushing your results to the StreamPULSE database.\n\t"))
+        push_model_to_server(output=output, deets=deets)
+        return(output)
+    }
+
+    #compare this model to the current best
+
+    pen1 = deets$prop_pos_ER
+    pen2 = deets$prop_neg_GPP
+    R2 = abs(deets$ER_K600_cor)
+    pen3 = (R2 >= 0 & R2 <= 0.5) * 0 +
+        (R2 > 0.5 & R2 <= 1) * scales::rescale(R2, 0:1, c(0.5,1))
+    kmax = max(model_fit@fit$daily$K600_daily_mean, na.rm=TRUE)
+    x = seq(30,100,0.1)
+    y =
+    pen4 = (kmax >= 0 & kmax < 30) * 0 +
+        (kmax >= 30 & kmax < 50) * scales::rescale(kmax, c(0,0.2), c(30,50)) +
+        (kmax >= 50 & kmax <= 100) * scales::rescale(kmax, c(0.2,1), c(50,100))
+
+
+
+    modspec$specs$prop_pos_ER
+
+    mmm <<- modspec
 
 }
