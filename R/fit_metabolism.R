@@ -185,9 +185,9 @@ fit_metabolism = function(d){
             'Returning your model fit and predictions.'))
         return(output)
     }
-    if(length(modspec) == 1 && ! is.null(modspec$error)){
-        return(output) #this line should never run; just here for later
-    }
+    # if(length(modspec) == 1 && ! is.null(modspec$error)){
+    #     return(output) #this line should never run; just here for later
+    # }
 
     #extract results related to current model run and performance
     deets = extract_model_details(model_fit, predictions, d$specs,
@@ -211,7 +211,6 @@ fit_metabolism = function(d){
     best_model_pen = get_model_penalty(modspec$specs)
 
     mods_equal = this_model_pen == best_model_pen
-    this_mod_better = this_model_pen < best_model_pen
     pen_dif = this_model_pen - best_model_pen
     coverage_dif = deets$coverage - modspec$specs$coverage
 
@@ -221,22 +220,24 @@ fit_metabolism = function(d){
                 "Pushing your results to the StreamPULSE database\n\t",
                 "and returning your model fit and predictions."))
             push_model_to_server(output=output, deets=deets)
-        } else {
-            cat(paste0("Your model is just as good as the best one on file.\n\t",
-                "Returning your model fit and predictions."))
         }
+
         return(output)
     }
 
-    #OI! COVERAGE SHOULD NOT BE BASED SOLELY ON START AND END DATE, BUT ALSO NA!
+    #COVERAGE SHOULD NOT BE BASED SOLELY ON START AND END DATE, BUT ALSO NA!
 
+    accept = compare_models(pen_dif, coverage_dif)
 
-    if(this_mod_better && coverage_dif > -25){
+    if(accept){
         cat(paste0("Your model outperformed the best one on file!\n\t",
             "Pushing your results to the StreamPULSE database\n\t",
             "and returning your model fit and predictions."))
-
+        push_model_to_server(output=output, deets=deets)
+        return(output)
     }
+
+    return(output)
 
     # mmm <<- modspec
 

@@ -400,6 +400,8 @@ extract_model_details = function(fit, preds, specs, year){
         GPP_95CI=gpp_95ci, ER_95CI=er_95ci, prop_pos_ER=prop_pos_er,
         prop_neg_GPP=prop_neg_gpp, ER_K600_cor=pearson, coverage=coverage,
         kmax=kmax,
+        current_best=TRUE, #if it's not the best, it won't get pushed to server,
+        #so setting this to TRUE for simplicity
         stringsAsFactors=FALSE)
 
     return(model_deets)
@@ -407,7 +409,7 @@ extract_model_details = function(fit, preds, specs, year){
 
 push_model_to_server = function(output, deets){
 
-    #first push model details to database
+    #push model details to database
     u2 = paste0("localhost:5000/api/model_details_upload")
     o = httr::POST(url=u2, body=deets, encode='form') #send data
 
@@ -421,7 +423,7 @@ push_model_to_server = function(output, deets){
         return(output)
     }
 
-    #then save model output and predictions to temp files as RDS
+    #save model output and predictions to temp files as RDS
     data_daily = output$fit@data_daily
     data = output$fit@data
     fit = output$fit@fit
@@ -476,4 +478,33 @@ get_model_penalty = function(z){
     pen_overall = mean(c(pen1, pen2, pen3, pen4))
 
     return(pen_overall)
+}
+
+compare_models = function(pen_dif, coverage_dif){
+
+    #define a function for determining whether to accept a new model if its
+    #coverage is lower than the existing best model (if penalty is
+    #proportionately lower, accept)
+    x1 = c(-365, 0, 365); y1 = c(1, 0, -1)
+    m1 = lm(y1 ~ x1)
+    a1 = m1$coefficients[2]
+    b1 = m1$coefficients[1]
+    above_line1 = pen_dif > a1 * coverage_dif + b1
+
+    #define a function for determining whether to accept a new model if its
+    #penalty is higher than the existing best model (if coverage is
+    #2X proportionately higher, accept)
+    x2 = c(-365, 0, 365); y2 = c(0.5, 0, -0.5)
+    m2 = lm(y2 ~ x2)
+    a2 = m2$coefficients[2]
+    b2 = m2$coefficients[1]
+    above_line2 = pen_dif > a2 * coverage_dif + b2
+
+    #evaluate whether the combination of model penalty and coverage for the
+    #new model is better than that of the old (is the x,y pair above the
+    #piecewise function defined above)
+    accept_new_mod = (coverage_dif <= 0 && above_line1) ||
+        (coverage_dif > 0 && above_line2)
+
+    return(accept_new_mod)
 }
