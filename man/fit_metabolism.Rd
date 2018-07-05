@@ -4,14 +4,71 @@
 \alias{fit_metabolism}
 \title{Fit stream metabolism models}
 \usage{
-fit_metabolism(fitdata)
+fit_metabolism(d, pool_K600 = "binned", err_obs_iid = TRUE,
+  err_proc_acor = FALSE, err_proc_iid = TRUE, ode_method = "trapezoid",
+  deficit_src = "DO_mod")
 }
 \arguments{
-\item{fitdata}{the output of \link{prep_metabolism}.}
+\item{d}{the output of \link{prep_metabolism}.}
+
+\item{pool_K600}{character. How should the model pool information among
+days to get more consistent daily estimates for K600? Options (see Details
+section of \code{streamMetabolizer}'s \code{mm_name} function for more):
+\itemize{
+  \item \code{none}: no pooling of K600
+  \item \code{normal}: \eqn{K600 ~ N(mu, sigma)}
+  \item \code{linear}: \eqn{K600 ~ N(B[0] + B[1]*Q, sigma)}
+  \item \code{binned}: \eqn{K600 ~ N(B[Q_bin], sigma)} where \eqn{mu ~
+  N(mu_mu, mu_sigma)} and \eqn{sigma ~ N(sigma_mu, sigma_sigma)}
+}}
+
+\item{err_obs_iid}{logical. Should IID observation error be included? If not,
+the model will be fit to the differences in successive DO measurements,
+rather than to the DO measurements themselves.}
+
+\item{err_proc_acor}{logical. Should autocorrelated process error (with the
+autocorrelation term phi fitted) be included?}
+
+\item{err_proc_iid}{logical. Should IID process error be included?}
+
+\item{ode_method}{character. The method to use in solving the ordinary
+differential equation for DO. Options:
+\itemize{
+  \item \code{euler}, formerly \code{Euler}: the final change in DO from
+  t=1 to t=2 is solely a function of GPP, ER, DO, etc. at t=1
+  \item \code{trapezoid}, formerly \code{pairmeans}: the final change in DO
+  from t=1 to t=2 is a function of the mean values of GPP, ER, etc. across
+  t=1 and t=2.
+  \item for \code{type='mle'}, options also include \code{rk2} and any
+  character method accepted by \code{\link[deSolve]{ode}} in the
+  \code{deSolve} package (\code{lsoda}, \code{lsode}, \code{lsodes},
+  \code{lsodar}, \code{vode}, \code{daspk}, \code{rk4}, \code{ode23},
+  \code{ode45}, \code{radau}, \code{bdf}, \code{bdf_d}, \code{adams},
+  \code{impAdams}, and \code{impAdams_d}; note that many of these have not
+  been well tested in the context of \code{streamMetabolizer} models)
+}}
+
+\item{deficit_src}{character. From what DO estimate (observed or modeled)
+should the DO deficit be computed? Options:
+\itemize{
+  \item \code{DO_mod}: the DO deficit at time t will be {(DO.sat(t) -
+  DO_mod(t))}, the difference between the equilibrium-saturation value and
+  the current best estimate of the true DO concentration at that time
+  \item \code{DO_obs}: the DO deficit at time t will be {(DO.sat(t) -
+  DO.obs(t))}, the difference between the equilibrium-saturation value and
+  the measured DO concentration at that time
+  \item \code{DO_obs_filter}: applicable only to \code{type='night'}: a
+  smoothing filter is applied over the measured DO.obs values before
+  applying nighttime regression
+  \item \code{NA}: applicable only to \code{type='Kmodel'}, for which DO deficit is not estimated
+}}
 }
 \value{
-returns the output of \code{streamMetabolizer}'s \code{metab}
-  function.
+returns a list containing the output of \code{streamMetabolizer}'s
+  \code{metab} function (the model fit object), the output of
+  \code{streamMetabolizer}'s
+  \code{predict_metab} function (metabolism predictions), and additional
+  information about model performance and specifications.
 }
 \description{
 Passes data and model parameters to \code{streamMetabolizer} or
@@ -21,20 +78,21 @@ NOTE: support for modeling with
 in the meantime.
 }
 \details{
-This function supports only default streamMetabolizer parameters at the
-moment. Namely, \code{err_obs_iid=TRUE, err_proc_acor=FALSE,}
-\code{ode_method='trapezoid', deficit_src='DO_mod'}.
-If \code{prep_metabolism}'s
-\code{model_type} argument is set to \code{'mle'}, then the following
-defaults will also be set: \code{engine='nlm', pool_K600='none',}
-\code{proc_err=FALSE}. If \code{model_type} is set to \code{'bayes'},
-these will
-instead be set to \code{engine='stan', pool_K600='binned', proc_err=TRUE},
-and \code{K600_lnQ_nodes_centers} will be a sequence of length 7 from
+This function is a wrapper for \code{streamMetabolizer}'s model specification,
+(\code{mm_name, specs}) fitting (\code{metab}), and prediction
+(\code{predict_metab}) functions, and all parameters except for \code{d}
+are \code{streamMetabolizer} parameters.
+Default arguments passed to this function
+specify the recommended starting point for fitting a metabolism model to
+data from a typical stream or river. In addition to the parameters
+documented here, this function calculates \code{K600_lnQ_nodes_centers}
+(parameter of \code{streamMetabolizer}'s \code{specs} function) as
+a sequence of length 7 from
 the minimum to the maximum natural log of daily discharge.
 
-Until this function is made more flexible, you can adjust the above
-parameters by using \code{streamMetabolizer}'s functions directly.
+To access the full model specification interface of \code{streamMetabolizer},
+please call its corresponding functions
+(\code{mm_name, specs, metab, predict_metab}) directly.
 See the example section below for more.
 }
 \examples{
@@ -63,6 +121,7 @@ modspecs$K600_lnQ_nodes_centers = seq(from=min(addis),
     to=max(addis), length.out=7)
 
 modelfit = metab(specs=modspecs, data=fitdata)
+predictions = predict_metab(modelfit)
 }
 \seealso{
 \code{\link{request_data}} for acquiring StreamPULSE data;

@@ -5,7 +5,7 @@
 \title{Retrieve data from the StreamPULSE database}
 \usage{
 request_data(sitecode, startdate = NULL, enddate = NULL, variables = NULL,
-  flags = TRUE, token = NULL)
+  token = NULL)
 }
 \arguments{
 \item{sitecode}{underscore-separated region and site code, e.g. 'NC_Eno'.
@@ -36,12 +36,6 @@ input field with the first and last available dates.}
 variables are available for a given site, select a site from the dropdown
 at \url{https://data.streampulse.org/visualize}. Omit this argument to
 request all variables potentially useful for metabolism modeling.}
-
-\item{flags}{logical. If \code{TRUE}, information about data points flagged
-as interesting, questionable, or "bad data" will be included. If
-\code{FALSE}, data will still be included, but without accompanying flag
-information (There's no good reason to omit flag information, and this
-parameter will eventually be deprecated.).}
 
 \item{token}{a unique alphanumeric string for each registered user of
 StreamPULSE. Only necessary for accessing embargoed data.}

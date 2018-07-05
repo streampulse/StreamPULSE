@@ -349,10 +349,14 @@ create_sm_class = function(){
 
 streamMetabolizer = create_sm_class()
 
-extract_model_details = function(fit, preds, specs, year){
+extract_model_details = function(fit, preds, specs){
 
     time_now = Sys.time()
     attr(time_now, 'tzone') = 'UTC'
+
+    strtyr = substr(specs$startdate, 1, 4)
+    endyr = substr(specs$enddate, 1, 4)
+    year = ifelse(strtyr == endyr, strtyr, 9999)
 
     rmse = sqrt(mean((fit@data$DO.mod - fit@data$DO.obs)^2, na.rm=TRUE))
 
@@ -374,9 +378,6 @@ extract_model_details = function(fit, preds, specs, year){
 
     more_specs = mm_parse_name(fit@specs$model_name)
 
-    # rc = ifelse(specs$region == 'NC' && specs$site != 'Eno', TRUE, FALSE)
-    rc = ifelse(specs$region == 'NC' && specs$site != 'Eno', 1, 0)
-
     kmax = max(fit@fit$daily$K600_daily_mean, na.rm=TRUE)
 
     model_deets = data.frame(region=specs$region,
@@ -386,7 +387,6 @@ extract_model_details = function(fit, preds, specs, year){
         year=year, run_finished=time_now, model=specs$model,
         method=more_specs$type,
         engine=fit@specs$engine, rm_flagged=specs$rm_flagged,
-        # used_rating_curve=as.numeric(specs$used_rating_curve),
         used_rating_curve=specs$used_rating_curve,
         pool=more_specs$pool_K600,
         proc_err=more_specs$err_proc_iid,
@@ -435,7 +435,6 @@ push_model_to_server = function(output, deets){
 
     #then push those RDS files to server
     file_id = paste(deets$region, deets$site, deets$year, sep='_')
-    # file_id = paste(deets$region, deets$site, deets$year, sep='_')
     u3 = paste0("localhost:5000/api/model_upload")
     o = httr::POST(url=u3,
         body=list(modOut=httr::upload_file(tmp1),
@@ -483,8 +482,8 @@ get_model_penalty = function(z){
 compare_models = function(pen_dif, coverage_dif){
 
     #define a function for determining whether to accept a new model if its
-    #coverage is lower than the existing best model (if penalty is
-    #proportionately lower, accept)
+    #coverage is less than the existing best model. if penalty is
+    #proportionately lower (better), accept.
     x1 = c(-365, 0, 365); y1 = c(1, 0, -1)
     m1 = lm(y1 ~ x1)
     a1 = m1$coefficients[2]
@@ -492,8 +491,8 @@ compare_models = function(pen_dif, coverage_dif){
     above_line1 = pen_dif > a1 * coverage_dif + b1
 
     #define a function for determining whether to accept a new model if its
-    #penalty is higher than the existing best model (if coverage is
-    #2X proportionately higher, accept)
+    #penalty is higher than the existing best model. if coverage is
+    #2X proportionately higher, accept.
     x2 = c(-365, 0, 365); y2 = c(0.5, 0, -0.5)
     m2 = lm(y2 ~ x2)
     a2 = m2$coefficients[2]
