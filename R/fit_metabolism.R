@@ -245,11 +245,9 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
     cat(paste0('Checking StreamPULSE database for model results to\n\t',
         'compare with the model you just fit.\n'))
 
-    #LOCALHOST
-    u = paste0("localhost:5000/api/model_details_download?region=",
+    u = paste0("http://data.streampulse.org/api/model_details_download?region=",
+    # u = paste0("localhost:5000/api/model_details_download?region=",
         d$specs$region, "&site=", d$specs$site, "&year=", mod_startyr)
-    # u = paste0("localhost:5000/api/model_details?region=NC",
-    #     "&site=Eno&year=2019")
 
     #retrieve details for the current best model
     if(d$specs$token == 'none'){
