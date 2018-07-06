@@ -246,7 +246,7 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
     cat(paste0('Checking StreamPULSE database for model results to\n\t',
         'compare with the model you just fit.\n'))
 
-    u = paste0("http://data.streampulse.org/api/model_details_download?region=",
+    u = paste0("https://data.streampulse.org/api/model_details_download?region=",
     # u = paste0("localhost:5000/api/model_details_download?region=",
         d$specs$region, "&site=", d$specs$site, "&year=", mod_startyr)
 
