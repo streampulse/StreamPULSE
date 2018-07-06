@@ -410,7 +410,7 @@ extract_model_details = function(fit, preds, specs){
 push_model_to_server = function(output, deets){
 
     #push model details to database
-    u2 = paste0("http://data.streampulse.org/api/model_details_upload")
+    u2 = paste0("https://data.streampulse.org/api/model_details_upload")
     # u2 = paste0("localhost:5000/api/model_details_upload")
     o = httr::POST(url=u2, body=deets, encode='form') #send data
 
@@ -436,7 +436,7 @@ push_model_to_server = function(output, deets){
 
     #then push those RDS files to server
     file_id = paste(deets$region, deets$site, deets$year, sep='_')
-    u3 = paste0("http://data.streampulse.org/api/model_upload")
+    u3 = paste0("https://data.streampulse.org/api/model_upload")
     # u3 = paste0("localhost:5000/api/model_upload")
     o = httr::POST(url=u3,
         body=list(modOut=httr::upload_file(tmp1),

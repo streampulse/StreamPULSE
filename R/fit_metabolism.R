@@ -238,6 +238,7 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
     mod_endyr = substr(d$specs$enddate, 1, 4)
     if(mod_startyr != mod_endyr){
         cat(paste('Done. Returning your model fit and predictions.\n'))
+        output$details$current_best = NULL
         return(output)
     }
 
@@ -262,6 +263,7 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
     if(class(modspec) == 'try-error'){
         cat(paste0('Failed to retrieve data from StreamPULSE.\n\t',
             'Returning your model fit and predictions.\n'))
+        output$details$current_best = NULL
         return(output)
     }
     # if(length(modspec) == 1 && ! is.null(modspec$error)){
@@ -275,6 +277,7 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
             "Pushing your results to the StreamPULSE database\n\t",
             "and returning model fit and predictions.\n"))
         push_model_to_server(output=output, deets=deets)
+        output$details$current_best = NULL
         return(output)
     }
 
@@ -295,6 +298,7 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
             push_model_to_server(output=output, deets=deets)
         }
 
+        output$details$current_best = NULL
         return(output)
     }
 
@@ -308,10 +312,12 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
             "Pushing your results to the StreamPULSE database\n\t",
             "and returning your model fit and predictions.\n"))
         push_model_to_server(output=output, deets=deets)
+        output$details$current_best = NULL
         return(output)
     }
 
     cat(paste('Done. Returning your model fit and predictions.\n'))
+    output$details$current_best = NULL
     return(output)
 
 }
