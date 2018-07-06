@@ -441,7 +441,7 @@ push_model_to_server = function(output, deets){
     o = httr::POST(url=u3,
         body=list(modOut=httr::upload_file(tmp1),
             predictions=httr::upload_file(tmp2)),
-        httr::add_headers(file_id=file_id))
+        httr::add_headers(fileid=file_id))
 
     jsono = httr::content(o, as="text", encoding="UTF-8") #get response
     oo = try(jsonlite::fromJSON(jsono), silent=TRUE)
