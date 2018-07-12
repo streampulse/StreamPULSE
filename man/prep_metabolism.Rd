@@ -6,9 +6,9 @@
 \usage{
 prep_metabolism(d, model = "streamMetabolizer", type = "bayes",
   interval = "15 min", rm_flagged = list("Bad Data", "Questionable"),
-  fillgaps = "interpolation", zq_curve = list(sensor_height = NULL, Z =
-  NULL, Q = NULL, a = NULL, b = NULL, fit = "power", ignore_oob_Z = TRUE, plot =
-  TRUE), estimate_areal_depth = TRUE, ...)
+  fillgaps = "interpolation", maxhours = 3, zq_curve = list(sensor_height
+  = NULL, Z = NULL, Q = NULL, a = NULL, b = NULL, fit = "power", ignore_oob_Z =
+  TRUE, plot = TRUE), estimate_areal_depth = TRUE, ...)
 }
 \arguments{
 \item{d}{the output of \code{request_data},
@@ -46,6 +46,8 @@ imputation method
 fails, which sometimes occurs when series consist largely of NAs, basic
 linear interpolation will be performed instead and the user will be
 notified.}
+
+\item{maxhours}{the maximum number of hours of consecutive NAs to impute.}
 
 \item{zq_curve}{a list containing specifications for a rating curve, used
 to estimate discharge from level or depth. Elements of this list may

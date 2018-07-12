@@ -112,6 +112,7 @@
 #'   fails, which sometimes occurs when series consist largely of NAs, basic
 #'   linear interpolation will be performed instead and the user will be
 #'   notified.
+#' @param maxhours the maximum number of hours of consecutive NAs to impute.
 #' @param zq_curve a list containing specifications for a rating curve, used
 #'   to estimate discharge from level or depth. Elements of this list may
 #'   include any of the following: Z (a vector of level or depth data), Q (a
@@ -154,7 +155,7 @@
 #'     fit='power', plot=TRUE), estimate_areal_depth=TRUE)
 prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     interval='15 min', rm_flagged=list('Bad Data', 'Questionable'),
-    fillgaps='interpolation',
+    fillgaps='interpolation', maxhours=3,
     zq_curve=list(sensor_height=NULL, Z=NULL, Q=NULL, a=NULL, b=NULL,
         fit='power', ignore_oob_Z=TRUE, plot=TRUE),
     estimate_areal_depth=TRUE, ...){
@@ -538,10 +539,10 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         cat("Estimating PAR based on latitude and time.\n")
     }
 
-    # impute missing data. code found in gapfill_functions.R
+    # impute missing data. code found in gapfill_functions.R (maxspan_days deprecated)
     dd = select(dd, -c(region, site, DateTime_UTC))
     if(fillgaps != 'none') dd = gap_fill(dd, maxspan_days=5, knn=3,
-        sint=desired_int, algorithm=fillgaps, ...)
+        sint=desired_int, algorithm=fillgaps, maxhours, ...)
 
     #rename variables
     if("DO_mgL" %in% vd) dd$DO.obs = dd$DO_mgL

@@ -168,8 +168,8 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
             addis = tapply(log(fitdata$discharge),
                 substr(fitdata$solar.time,1,10), mean)
             # sum(is.infinite(log(fitdata$discharge))
-            modspecs$K600_lnQ_nodes_centers = seq(from=min(addis),
-                to=max(addis), length.out=7)
+            modspecs$K600_lnQ_nodes_centers = seq(from=min(addis, na.rm=TRUE),
+                to=max(addis, na.rm=TRUE), length.out=7)
         }
 
         #fit model

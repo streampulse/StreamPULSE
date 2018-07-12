@@ -242,10 +242,11 @@ fill_missing = function(df, date_index, maxspan_days, samp, lim=0){
     return(gapfilled)
 }
 
-gap_fill = function(df, maxspan_days=5, knn=3, sint, algorithm, ...){
+gap_fill = function(df, maxspan_days=5, knn=3, sint, algorithm, maxhours, ...){
     # df is data frame, requires one column as POSIXct date time and the
     # other columns as numeric. the order of columns does not matter.
     # int is the interval between samples
+    #maxhours is maximum span of NAs to fill. maxspan_days is not currently in use
 
     # df2 <<- df
     # sint2 <<- sint
@@ -291,7 +292,8 @@ gap_fill = function(df, maxspan_days=5, knn=3, sint, algorithm, ...){
     # apply(input_data, 2, function(x) sum(is.na(x))/length(x))
     imputed = input_data
     for(i in 3:ncol(input_data)){
-        imputed[,i] = series_impute(x=input_data[,i], tol=samples_per_day*2,
+        imputed[,i] = series_impute(x=input_data[,i],
+            tol=samples_per_day * (maxhours / 24),
             samp=samples_per_day, algorithm=algorithm,
             variable_name=colnames(input_data)[i])
     }
@@ -327,11 +329,9 @@ gap_fill = function(df, maxspan_days=5, knn=3, sint, algorithm, ...){
             call.=FALSE)
     }
 
-    #linearly impute any remaining gaps
+    #linearly impute any remaining gaps #NO. it's okay to model with NAs!
     filled[is.na(filled)] = NA #replace any NaNs with NAs
-    filled[,-1] = apply(filled[,-1], 2, na.fill, 'extend')
-    # print(sum(is.na(filled)))
+    # filled[,-1] = apply(filled[,-1], 2, na.fill, 'extend')
 
     return(filled)
-    # return(input_data)
 }
