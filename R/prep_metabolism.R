@@ -103,7 +103,7 @@
 #'   \code{list('Questionable', 'Bad Data')}.
 #' @param fillgaps a string specifying one of the imputation methods available
 #'   to \code{imputeTS::na.seasplit}, namely: 'interpolation', 'locf', 'mean',
-#'   'random', 'kalman', or 'ma'. May also be 'none'. The 
+#'   'random', 'kalman', or 'ma'. May also be 'none'. The
 #'   imputation method, if specified, will be attempted after seasonal decomposition.
 #'   Periodicity depends on the between-sample interval, and is determined
 #'   programmatically (see details for \code{interval}). If the desired
@@ -138,6 +138,7 @@
 #'   better off with TRUE, assuming you have discharge data to estimate areal
 #'   depth
 #'   from, or a rating curve by which to generate discharge data.
+#' @param ... additional arguments passed to \code{imputeTS::na.seasplit}.
 #' @return returns an S4 object containing a \code{data.frame} formatted for
 #'   the model specified by \code{model} and \code{type}.
 #' @seealso \code{\link{request_data}} for acquiring StreamPULSE data;

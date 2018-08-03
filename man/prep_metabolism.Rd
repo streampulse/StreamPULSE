@@ -38,7 +38,7 @@ data points flagged as "Questionable" or "Bad Data". Set this argument to
 
 \item{fillgaps}{a string specifying one of the imputation methods available
 to \code{imputeTS::na.seasplit}, namely: 'interpolation', 'locf', 'mean',
-'random', 'kalman', or 'ma'. May also be 'none'. The 
+'random', 'kalman', or 'ma'. May also be 'none'. The
 imputation method, if specified, will be attempted after seasonal decomposition.
 Periodicity depends on the between-sample interval, and is determined
 programmatically (see details for \code{interval}). If the desired
@@ -76,6 +76,8 @@ level-at-sensor, you'd be
 better off with TRUE, assuming you have discharge data to estimate areal
 depth
 from, or a rating curve by which to generate discharge data.}
+
+\item{...}{additional arguments passed to \code{imputeTS::na.seasplit}.}
 }
 \value{
 returns an S4 object containing a \code{data.frame} formatted for
