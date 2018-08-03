@@ -6,9 +6,10 @@
 \usage{
 prep_metabolism(d, model = "streamMetabolizer", type = "bayes",
   interval = "15 min", rm_flagged = list("Bad Data", "Questionable"),
-  fillgaps = "interpolation", maxhours = 3, zq_curve = list(sensor_height
-  = NULL, Z = NULL, Q = NULL, a = NULL, b = NULL, fit = "power", ignore_oob_Z =
-  TRUE, plot = TRUE), estimate_areal_depth = TRUE, ...)
+  fillgaps = "interpolation", maxhours = 3,
+  zq_curve = list(sensor_height = NULL, Z = NULL, Q = NULL, a = NULL, b =
+  NULL, fit = "power", ignore_oob_Z = TRUE, plot = TRUE),
+  estimate_areal_depth = TRUE, ...)
 }
 \arguments{
 \item{d}{the output of \code{request_data},
@@ -36,16 +37,15 @@ data points flagged as "Questionable" or "Bad Data". Set this argument to
 \code{list('Questionable', 'Bad Data')}.}
 
 \item{fillgaps}{a string specifying one of the imputation methods available
-to imputeTS::na.seasplit, namely: 'interpolation', 'locf', 'mean',
-'random', 'kalman', or 'ma'. May also be 'none', though gaps are not
-tolerated by either \code{BASE} or \code{streamMetabolizer}. The specified
-imputation method will be attempted after seasonal decomposition.
+to \code{imputeTS::na.seasplit}, namely: 'interpolation', 'locf', 'mean',
+'random', 'kalman', or 'ma'. May also be 'none'. The 
+imputation method, if specified, will be attempted after seasonal decomposition.
 Periodicity depends on the between-sample interval, and is determined
 programmatically (see details for \code{interval}). If the desired
 imputation method
 fails, which sometimes occurs when series consist largely of NAs, basic
 linear interpolation will be performed instead and the user will be
-notified.}
+notified. See \code{maxhours}.}
 
 \item{maxhours}{the maximum number of hours of consecutive NAs to impute.}
 
