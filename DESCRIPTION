@@ -1,6 +1,6 @@
 Package: StreamPULSE
 Title: Run Stream Metabolism Models on StreamPULSE data
-Version: 0.0.0.9009
+Version: 0.0.0.9010
 Authors@R: c(person("Mike", "Vlah", email = "vlahm13@gmail.com", role = c("aut", "cre")), person("Aaron", "Berdanier", email = "aaron.berdanier@gmail.com", role = "aut"))
 Description: StreamPULSE is a community of researchers working to
     answer fundamental questions about ecosystem production and

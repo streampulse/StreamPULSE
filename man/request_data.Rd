@@ -4,8 +4,8 @@
 \alias{request_data}
 \title{Retrieve data from the StreamPULSE database}
 \usage{
-request_data(sitecode, startdate = NULL, enddate = NULL,
-  variables = NULL, token = NULL)
+request_data(sitecode, startdate = NULL, enddate = NULL, variables = NULL,
+  token = NULL)
 }
 \arguments{
 \item{sitecode}{underscore-separated region and site code, e.g. 'NC_Eno'.

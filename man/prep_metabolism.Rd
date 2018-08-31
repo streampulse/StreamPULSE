@@ -6,10 +6,9 @@
 \usage{
 prep_metabolism(d, model = "streamMetabolizer", type = "bayes",
   interval = "15 min", rm_flagged = list("Bad Data", "Questionable"),
-  fillgaps = "interpolation", maxhours = 3,
-  zq_curve = list(sensor_height = NULL, Z = NULL, Q = NULL, a = NULL, b =
-  NULL, fit = "power", ignore_oob_Z = TRUE, plot = TRUE),
-  estimate_areal_depth = TRUE, ...)
+  fillgaps = "interpolation", maxhours = 3, zq_curve = list(sensor_height
+  = NULL, Z = NULL, Q = NULL, a = NULL, b = NULL, fit = "power", ignore_oob_Z =
+  TRUE, plot = TRUE), estimate_areal_depth = TRUE, ...)
 }
 \arguments{
 \item{d}{the output of \code{request_data},

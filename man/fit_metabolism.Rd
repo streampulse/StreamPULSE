@@ -5,8 +5,8 @@
 \title{Fit stream metabolism models}
 \usage{
 fit_metabolism(d, pool_K600 = "binned", err_obs_iid = TRUE,
-  err_proc_acor = FALSE, err_proc_iid = TRUE,
-  ode_method = "trapezoid", deficit_src = "DO_mod")
+  err_proc_acor = FALSE, err_proc_iid = TRUE, ode_method = "trapezoid",
+  deficit_src = "DO_mod")
 }
 \arguments{
 \item{d}{the output of \link{prep_metabolism}.}

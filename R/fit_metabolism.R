@@ -286,7 +286,7 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
     best_model_pen = get_model_penalty(modspec$specs)
 
     mods_equal = this_model_pen == best_model_pen
-    pen_dif = this_model_pen - best_model_pen
+    pen_dif = best_model_pen - this_model_pen
     coverage_dif = deets$coverage - modspec$specs$coverage
 
     #if mod penalties equal, compare coverage. if better, push. return.
