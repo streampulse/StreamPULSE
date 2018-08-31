@@ -25,7 +25,7 @@ series_impute = function(x, tol, samp, algorithm, variable_name, ...){
     # message(dim(x))
     # message(dim(na_locations))
     if(length(na_locations) > 1){ #if NAs in x, get indices of long runs
-        runs = rle2(diff(na_locations), indices=TRUE, return.list=FALSE)
+        runs = rle2(diff(na_locations), indices=TRUE)
         runs = runs[runs[,'values'] == 1 & runs[,'lengths'] >= tol-1, ,
             drop=FALSE]
         long_na_runs = mapply(seq, runs[,'starts'], runs[,'stops'] + 1,
