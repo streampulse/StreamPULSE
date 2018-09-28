@@ -124,7 +124,7 @@ cumul_legend = function(){
 
 kernel_func = function(ts_full, main){
 
-    kernel = kde(na.omit(ts_full[, c('GPP', 'ER')]))
+    kernel = ks::kde(na.omit(ts_full[, c('GPP', 'ER')]))
     k_lim = max(abs(c(min(ts_full$ER, na.rm=TRUE),
         max(ts_full$GPP, na.rm=TRUE))))
     plot(kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',

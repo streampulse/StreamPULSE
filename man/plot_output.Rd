@@ -4,13 +4,13 @@
 \alias{plot_output}
 \title{Visualize metabolism model results}
 \usage{
-plot_output(model_fit)
+plot_output(model_out)
 }
 \arguments{
-\item{model_fit}{the output of \link{fit_metabolism}.}
+\item{model_out}{the output of \link{fit_metabolism}.}
 }
 \value{
-Opens a shiny app via localhost, using the default browser.
+Opens a shiny app in default browser via localhost.
 }
 \description{
 Generates a Shiny R visualization similar to those found on the
