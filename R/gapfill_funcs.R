@@ -28,7 +28,7 @@ series_impute = function(x, tol, samp, algorithm, variable_name, ...){
         # runs = rle2(diff(na_locations), indices=TRUE) #function now broken
         runs = rle(diff(na_locations))
         ends = cumsum(runs$lengths)
-        runs = cbind(values=runs$values, starts=c(1, dplyr::lag(ends)[-1] + 1),
+        runs = cbind(values=runs$values, starts=c(1, lag(ends)[-1] + 1),
             stops=ends, lengths=runs$lengths, deparse.level=1)
         runs = runs[runs[,'values'] == 1 & runs[,'lengths'] >= tol-1, ,
             drop=FALSE]
@@ -137,13 +137,13 @@ prep_missing = function(df, nearest_neighbors, daily_averages, mm, samp){
     # mm = mm2
     # samp = samp2
 
-    missing = dplyr::filter(df, date %in% daily_averages$date[mm])
+    missing = filter(df, date %in% daily_averages$date[mm])
     # if missing first and last obs, extend timeseries to include neighbor days
     #  unless first/last day
     if(any(!complete.cases(missing)[c(1,nrow(missing))])){
         if(mm[1]!=1) mm = c(mm[1]-1, mm) # if not first day, extend obs range
         if(tail(mm,1)!=nrow(daily_averages)) mm = c(mm, tail(mm,1)+1) # if not last day, extend obs range
-        missing = dplyr::filter(df, date%in%daily_averages$date[mm]) # missing one step interpolation
+        missing = filter(df, date%in%daily_averages$date[mm]) # missing one step interpolation
         # if any data missing still (i.e., first and last day), add avg of first and last obs
         #  this should catch most NAs for filling missing
         if(any(!complete.cases(missing)[c(1,nrow(missing))])){
@@ -157,11 +157,11 @@ prep_missing = function(df, nearest_neighbors, daily_averages, mm, samp){
     ss = data.frame(date=daily_averages$date[mm],
         match=daily_averages$date[t(nearest_neighbors[mm,])])
     ss = ss[complete.cases(ss),]
-    similar = dplyr::left_join(ss, df, by=c("match"="date")) %>%
-        dplyr::select(-match) %>% dplyr::group_by(date, time) %>% dplyr::summarize_all(mean) %>%
-        dplyr::ungroup()
+    similar = left_join(ss, df, by=c("match"="date")) %>%
+        select(-match) %>% group_by(date, time) %>% summarize_all(mean) %>%
+        ungroup()
     # make sure that the dates in similar and missing line up
-    missing = dplyr::right_join(missing, dplyr::select(similar,date,time),
+    missing = right_join(missing, select(similar,date,time),
         by=c("date","time"))
     ### DAILY SNAP POINTS
     # add snap points at beginning/end each new day to rescale and
@@ -171,13 +171,13 @@ prep_missing = function(df, nearest_neighbors, daily_averages, mm, samp){
 
     if(any(is.na(daypoints))){
         #tol should be greater here probably?
-        dayfill = series_impute(dplyr::select(daypoints,-date,-time), tol=0,
+        dayfill = series_impute(select(daypoints,-date,-time), tol=0,
             samp=samp, algorithm='mean', variable_name=work-this-out)
         missing[newdaypoints,] = data.frame(date=daypoints$date,
             time=daypoints$time, dayfill)
     }
-    msng = list(missing=dplyr::select(missing,-date,-time),
-        similar=dplyr::select(similar,-date,-time), index=dplyr::select(similar,date,time))
+    msng = list(missing=select(missing,-date,-time),
+        similar=select(similar,-date,-time), index=select(similar,date,time))
 
     return(msng)
 }
@@ -240,7 +240,7 @@ fill_missing = function(df, date_index, maxspan_days, samp, lim=0){
     #         }
     #     }
     # }
-    gapfilled = data.frame(date_index, dplyr::select(df,-date,-time),
+    gapfilled = data.frame(date_index, select(df,-date,-time),
         stringsAsFactors=FALSE)
 
     return(gapfilled)
@@ -275,10 +275,10 @@ gap_fill = function(df, maxspan_days=5, knn=3, sint, algorithm, maxhours, ...){
 
     # kind of goofy to do this by date and time, but that's because I
     # translated the code from Python
-    input_data = df %>% dplyr::mutate(date=as.Date(df[,dtcol]),
+    input_data = df %>% mutate(date=as.Date(df[,dtcol]),
         time=strftime(df[,dtcol], format="%H:%M:%S")) %>%
-        dplyr::select(-dplyr::one_of(dtcol)) %>% dplyr::select(date, time, dplyr::everything())
-    date_index = df %>% dplyr::select(dplyr::one_of(dtcol)) # index data
+        select(-one_of(dtcol)) %>% select(date, time, everything())
+    date_index = df %>% select(one_of(dtcol)) # index data
 
     #get daily sampling frequency so imputation can leverage periodicity
     samples_per_day = 24 * 60 / as.double(sint, units='mins')

@@ -218,7 +218,7 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
         directory = model_fit$output_directory
         preds = read.csv(paste0(directory,"/output/BASE_results.csv")) %>%
             tidyr::separate(File, c("fileX", "date", "extX"), "_|\\.") %>%
-            dplyr::select(-fileX, -extX) %>% dplyr::mutate(date=as.Date(date))
+            select(-fileX, -extX) %>% mutate(date=as.Date(date))
         #develop stuff here if we ever use BASE again
     }else{
         predictions = streamMetabolizer::predict_metab(model_fit)
