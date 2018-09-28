@@ -1,6 +1,6 @@
 Package: StreamPULSE
 Title: Run Stream Metabolism Models on StreamPULSE data
-Version: 0.0.0.9012
+Version: 0.0.0.9013
 Authors@R: c(person("Mike", "Vlah", email = "vlahm13@gmail.com", role = c("aut", "cre")), person("Aaron", "Berdanier", email = "aaron.berdanier@gmail.com", role = "aut"))
 Description: StreamPULSE is a community of researchers working to
     answer fundamental questions about ecosystem production and
@@ -15,10 +15,10 @@ Description: StreamPULSE is a community of researchers working to
     supplementation where necessary, formatting for streamMetabolizer
     or BASE, as well as model fitting and prediction.
 Depends: R (>= 3.3.2),plyr,dplyr,httr,jsonlite,tidyr,imputeTS,
-    geosphere,readr,tibble,zoo,geoknife
+    geosphere,readr,tibble,zoo,geoknife,R.utils
 License: MIT
 Encoding: UTF-8
 LazyData: true
 URL: https://github.com/streampulse/StreamPULSE
 BugReports: https://github.com/streampulse/StreamPULSE/issues
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.0.9000

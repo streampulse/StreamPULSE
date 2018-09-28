@@ -101,9 +101,8 @@ request_data = function(sitecode, startdate=NULL, enddate=NULL, variables=NULL,
 
     #check for errors
     if(class(d) == 'try-error'){
-        stop(paste0('Unable to process request. Are you requesting an\n\t',
-            'Unavailable date range? If not, notify Mike:\n\t',
-            'vlahm13@gmail.com'), call.=FALSE)
+        stop(paste0('Unable to process request. Please check your\n\t',
+            'arguments.'), call.=FALSE)
     }
 
     if(length(d$data) == 1 && d$data == 'USGS_error'){

@@ -252,15 +252,31 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
 
     #retrieve details for the current best model
     if(d$specs$token == 'none'){
-        r = httr::GET(u)
-    }else{
-        r = httr::GET(u, httr::add_headers(Token=d$specs$token))
+        # r = httr::GET(u)
+        tryCatch(R.utils::witheTimeout(r <- httr::GET(u),
+            timeout=12, onTimeout='error'),
+            error=function(e){
+                warning(paste('Could not reach StreamPULSE.',
+                    'Check your internet connection.'), call.=FALSE)
+                })
+    } else {
+        # r = httr::GET(u, httr::add_headers(Token=d$specs$token))
+        tryCatch(R.utils::withTimeout(r <- httr::GET(u,
+            httr::add_headers(Token=d$specs$token)), timeout=12,
+            onTimeout='error'),
+            error=function(e){
+                warning(paste('Could not reach StreamPULSE.',
+                    'Check your internet connection.'), call.=FALSE)
+                })
     }
-    json = httr::content(r, as="text", encoding="UTF-8")
-    modspec = try(jsonlite::fromJSON(json), silent=TRUE)
+
+    if(exists('r')){
+        json = httr::content(r, as="text", encoding="UTF-8")
+        modspec = try(jsonlite::fromJSON(json), silent=TRUE)
+    }
 
     #check for errors
-    if(class(modspec) == 'try-error'){
+    if(!exists('modspec') || class(modspec) == 'try-error'){
         cat(paste0('Failed to retrieve data from StreamPULSE.\n\t',
             'Returning your model fit and predictions.\n'))
         output$details$current_best = NULL
