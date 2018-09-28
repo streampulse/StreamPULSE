@@ -70,8 +70,8 @@ fit_BASE = function(directory, interval=900, n.iter=10000, n.burnin=5000){
         Rhat.test <- ifelse(any(srf>1.1, na.rm=T)==TRUE,"Check convergence", "Fine")
 
         # autocorr test
-        metab.mcmc<-as.mcmc(metab)
-        ac.lag1 <- autocorr.diag(metab.mcmc, lags = 1)
+        metab.mcmc<-coda::as.mcmc(metab)
+        ac.lag1 <- coda::autocorr.diag(metab.mcmc, lags = 1)
         auto.corr.test <- NULL
         auto.corr.test <- ifelse(any(abs(ac.lag1)>0.1, na.rm=T)==TRUE,"Check ac", "ac OK")
 

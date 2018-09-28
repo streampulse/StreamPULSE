@@ -151,14 +151,14 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
         }
 
         # set most model specs
-        modname = mm_name(type=model_type, pool_K600=pool_K600,
+        modname = streamMetabolizer::mm_name(type=model_type, pool_K600=pool_K600,
             err_obs_iid=err_obs_iid, err_proc_acor=err_proc_acor,
             err_proc_iid=err_proc_iid,
             ode_method=ode_method, deficit_src=deficit_src, engine=engine)
         # modname = mm_name(type=model_type, pool_K600=pool_K600,
         #     err_obs_iid=TRUE, err_proc_acor=FALSE, err_proc_iid=proc_err,
         #     ode_method = "trapezoid", deficit_src="DO_mod", engine=engine)
-        modspecs = specs(modname)
+        modspecs = streamMetabolizer::specs(modname)
 
         # fitdata2 <<- fitdata
         # stop('a')
@@ -173,7 +173,7 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
         }
 
         #fit model
-        model_fit = metab(specs=modspecs, data=fitdata)
+        model_fit = streamMetabolizer::metab(specs=modspecs, data=fitdata)
         # return(model_fit)
 
     }else if(model=="BASE"){
@@ -217,11 +217,11 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
     if(class(model_fit)=="BASE"){
         directory = model_fit$output_directory
         preds = read.csv(paste0(directory,"/output/BASE_results.csv")) %>%
-            separate(File, c("fileX", "date", "extX"), "_|\\.") %>%
-            select(-fileX, -extX) %>% mutate(date=as.Date(date))
+            tidyr::separate(File, c("fileX", "date", "extX"), "_|\\.") %>%
+            dplyr::select(-fileX, -extX) %>% dplyr::mutate(date=as.Date(date))
         #develop stuff here if we ever use BASE again
     }else{
-        predictions = predict_metab(model_fit)
+        predictions = streamMetabolizer::predict_metab(model_fit)
         output = list(predictions=predictions, fit=model_fit)
     }
 
@@ -253,7 +253,7 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
     #retrieve details for the current best model
     if(d$specs$token == 'none'){
         # r = httr::GET(u)
-        tryCatch(R.utils::witheTimeout(r <- httr::GET(u),
+        tryCatch(R.utils::withTimeout(r <- httr::GET(u),
             timeout=12, onTimeout='error'),
             error=function(e){
                 warning(paste('Could not reach StreamPULSE.',

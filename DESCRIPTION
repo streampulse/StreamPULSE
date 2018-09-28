@@ -15,9 +15,11 @@ Description: StreamPULSE is a community of researchers working to
     data acquisition from the StreamPULSE database, data
     supplementation where necessary, formatting for streamMetabolizer
     or BASE, as well as model fitting and prediction.
-Depends: R (>= 3.3.2),plyr,dplyr,httr,jsonlite,tidyr,imputeTS,
-    geosphere,readr,tibble,zoo,geoknife,R.utils,shiny,Cairo,ks,
-    scales,shinyjs
+Depends: R (>= 3.3.2),
+    shiny,Cairo
+Imports:
+    plyr,dplyr,httr,jsonlite,tidyr,imputeTS,ks,geosphere,readr,
+    tibble,zoo,geoknife,R.utils
 License: MIT
 Encoding: UTF-8
 LazyData: true

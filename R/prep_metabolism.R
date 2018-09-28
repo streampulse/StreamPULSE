@@ -402,7 +402,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
             }
             alldates = data.frame(DateTime_UTC=seq.POSIXt(dd[starting_row,1],
                 dd[nrow(dd),1], by=interval))
-            dd_temp = left_join(alldates, dd, by='DateTime_UTC')
+            dd_temp = dplyr::left_join(alldates, dd, by='DateTime_UTC')
 
             #get new NA proportions for each column
             na_props = apply(dd_temp[,-c(1:3)], 2,
@@ -413,7 +413,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     } else { #if just one sample interval is found, it's easy.
         alldates = data.frame(DateTime_UTC=seq.POSIXt(dd[1,1],
             dd[nrow(dd),1], by=interval))
-        dd = left_join(alldates, dd, by='DateTime_UTC')
+        dd = dplyr::left_join(alldates, dd, by='DateTime_UTC')
     }
 
     #acquire air pressure data if necessary
@@ -437,13 +437,13 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
                 warning(paste('Failed to retrieve air pressure data.'),
                     call.=FALSE)
             } else {
-                dd = left_join(dd, airpres, by='DateTime_UTC')
-                dd$AirPres_kPa = na.approx(dd$AirPres_kPa, na.rm=FALSE, rule=2)
+                dd = dplyr::left_join(dd, airpres, by='DateTime_UTC')
+                dd$AirPres_kPa = zoo::na.approx(dd$AirPres_kPa, na.rm=FALSE, rule=2)
             }
 
         } else {
-            dd = left_join(dd, airpres, by='DateTime_UTC')
-            dd$AirPres_kPa = na.approx(dd$AirPres_kPa, na.rm=FALSE, rule=2)
+            dd = dplyr::left_join(dd, airpres, by='DateTime_UTC')
+            dd$AirPres_kPa = zoo::na.approx(dd$AirPres_kPa, na.rm=FALSE, rule=2)
 
             # linearly interpolate missing values for wind speed and air pressure
             # dd$wind_speed = approx(x=dd$wind_speed, xout=which(is.na(dd$wind_speed)))$y
@@ -540,7 +540,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     }
 
     # impute missing data. code found in gapfill_functions.R (maxspan_days deprecated)
-    dd = select(dd, -c(region, site, DateTime_UTC))
+    dd = dplyr::select(dd, -c(region, site, DateTime_UTC))
     if(fillgaps != 'none') dd = gap_fill(dd, maxspan_days=5, knn=3,
         sint=desired_int, algorithm=fillgaps, maxhours, ...)
 
@@ -552,7 +552,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     #use discharge to estimate mean depth of area defined
     #by stream width and O2 turnover distance (if necessary or desired)
     if("Discharge_m3s" %in% vd & estimate_areal_depth){
-        dd$depth = calc_depth(dd$discharge) #estimate mean areal depth
+        dd$depth = streamMetabolizer::calc_depth(dd$discharge) #estimate mean areal depth
     } else {
 
         #otherwise just use depth directly.
@@ -630,15 +630,15 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
 
     # Structure data, add class for model name
     if(model=="BASE"){ # rename variables for BASE
-        fitdata = dd %>% select_(.dots=model_variables) %>%
-            mutate(Date=as.Date(solar.time),
+        fitdata = dd %>% dplyr::select_(.dots=model_variables) %>%
+            dplyr::mutate(Date=as.Date(solar.time),
                 Time=strftime(solar.time, format="%H:%M:%S"), salinity=0) %>%
-            rename(I=light, tempC=temp.water, DO.meas=DO.obs) %>%
-            select(Date, Time, I, tempC, DO.meas, atmo.pressure, salinity)
+            dplyr::rename(I=light, tempC=temp.water, DO.meas=DO.obs) %>%
+            dplyr::select(Date, Time, I, tempC, DO.meas, atmo.pressure, salinity)
         BASE = setClass("BASE", contains="data.frame")
         outdata = as(fitdata, "BASE")
     }else if(model=="streamMetabolizer"){
-        fitdata = select_(dd, .dots=model_variables)
+        fitdata = dplyr::select_(dd, .dots=model_variables)
         # streamMetabolizer = create_sm_class()
         outdata = as(fitdata, "streamMetabolizer")
         outdata@type = type
