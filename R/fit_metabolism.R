@@ -134,16 +134,20 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
             #     pool_K600 = 'binned'
             # }
             engine = 'stan'#; pool_K600 = 'binned'; proc_err = TRUE
+            if(! 'discharge' %in% colnames(fitdata) && pool_K600 == 'binned'){
+                stop(paste0("Discharge data required to use pool_K600='binned'.",
+                    "\n\tTry using pool_K600='none'."), call.=FALSE)
+            }
         } else {
             if(pool_K600 == 'binned'){
-                message(paste0("pool_K600 can't be 'binned' in MLE ",
-                    "framework.\n\tSetting it to 'none'."))
-                pool_K600 = 'none'
+                stop(paste0("pool_K600 can't be 'binned' in MLE ",
+                    "framework.\n\tTry setting it to 'none'."), call.=FALSE)
+                # pool_K600 = 'none'
             }
             if(proc_err == TRUE){
-                message(paste0("proc_err can't be TRUE in MLE ",
-                    "framework.\n\tSetting it to FALSE."))
-                proc_err = FALSE
+                stop(paste0("proc_err can't be TRUE in MLE ",
+                    "framework.\n\tTry setting it to FALSE."), call.=FALSE)
+                # proc_err = FALSE
             }
             engine = 'nlm'#; pool_K600 = 'none'; proc_err = FALSE
         }

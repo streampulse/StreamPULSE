@@ -134,7 +134,7 @@
 #'   area already, or average depth for a stream cross-section, you'd probably
 #'   want
 #'   to use FALSE. If your depth data represent only depth-at-sensor, or worse,
-#'   level-at-sensor, you'd be
+#'   level-at-sensor, you might be
 #'   better off with TRUE, assuming you have discharge data to estimate areal
 #'   depth
 #'   from, or a rating curve by which to generate discharge data.
@@ -158,7 +158,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     fillgaps='interpolation', maxhours=3,
     zq_curve=list(sensor_height=NULL, Z=NULL, Q=NULL, a=NULL, b=NULL,
         fit='power', ignore_oob_Z=TRUE, plot=TRUE),
-    estimate_areal_depth=TRUE, ...){
+    estimate_areal_depth=FALSE, ...){
     # zq_curve=list(Z=NULL, Q=NULL, a=NULL, b=NULL), ...){
 
     # type is one of "bayes" or "mle"
@@ -341,11 +341,16 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     #averaged across area defined by width and O2 turnover distance.
     #this last metric is what the model actually needs
     #the code below may be party useful depending on what "depth" means for a given site
-    # if('Level_m' %in% vd & ! 'Depth_m' %in% vd){ #use level if depth unavailable
-    #     dd$Depth_m = dd$Level_m
-    #     vd = c(vd, 'Depth_m')
-    #     message('Using level data in place of missing depth data.')
-    # }
+    using_level = 'Level_m' %in% vd && ! 'Depth_m' %in% vd &&
+        !('Discharge_m3s' %in% vd && estimate_areal_depth)
+    if(using_level){
+        dd$Depth_m = dd$Level_m
+        vd = c(vd, 'Depth_m')
+        warning(paste0('Using level data in place of missing depth data.',
+            '\n\tThis will produce inaccurate model results.\n\t',
+            'See estimate_areal_depth parameter for another possibility.'),
+            call.=FALSE)
+    }
     # if('Level_m' %in% vd & 'Depth_m' %in% vd){ #use col with more data if both
     #     na_cnt = sapply(dd[,c('Level_m','Depth_m')], function(x) sum(is.na(x)))
     #     level_or_depth = names(which.min(na_cnt))
@@ -521,8 +526,6 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         }
     }
 
-
-
     # convert UTC to solar time
     dd$solar.time = suppressWarnings(streamMetabolizer::convert_UTC_to_solartime(
         date.time=dd$DateTime_UTC, longitude=md$lon[1], time.type="mean solar"))
@@ -559,14 +562,17 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         if("Depth_m" %in% vd){
             dd$depth = dd$Depth_m
 
-            warning(paste0('Passing "Depth_m" values from StreamPULSE database',
-                ' directly to streamMetabolizer.\n\tMetabolism estimates will',
-                ' be best if "Depth_m" represents mean depth\n\tfor the ',
-                'area defined by the width of the stream and the oxygen\n\t',
-                'turnover distance. "Depth_m" may also represent depth-at-gage',
-                ' or,\n\tworse, level-at-gage. These may result in poor ',
-                'metabolism estimates.\n\tYou may want to use zq_curve.'),
-                call.=FALSE)
+            if(! using_level){
+                warning(paste0('Passing "Depth_m" values from StreamPULSE database',
+                    ' directly to streamMetabolizer.\n\tMetabolism estimates will',
+                    ' be best if "Depth_m" represents mean depth\n\tfor the ',
+                    'area defined by the width of the stream and the oxygen\n\t',
+                    'turnover distance. "Depth_m" may also represent depth-at-gage',
+                    ' or,\n\tworse, level-at-gage. These may result in poor ',
+                    'metabolism estimates.\n\tYou may want to use zq_curve',
+                    '\n\tor estimate_areal_depth.'),
+                    call.=FALSE)
+            }
 
         } else {
 
@@ -630,7 +636,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     if(model == 'streamMetabolizer' && type == 'bayes' &&
             ! 'discharge' %in% colnames(dd)){
         warning(paste("Without discharge data (or estimates), you'll have to",
-            "run fit_metabolism with pool_K600='none'."), call.=FALSE)
+            "\n\trun fit_metabolism with pool_K600='none'."), call.=FALSE)
     }
 
     # Structure data, add class for model name

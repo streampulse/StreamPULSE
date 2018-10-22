@@ -83,13 +83,13 @@ request_data = function(sitecode, startdate=NULL, enddate=NULL, variables=NULL,
     }
 
     #assemble url based on user input
-    u = paste0("https://data.streampulse.org/api?sitecode=",sitecode)
-    # u = paste0("localhost:5000/api?sitecode=",sitecode)
-    if(!is.null(startdate)) u = paste0(u,"&startdate=",startdate)
-    if(!is.null(enddate)) u = paste0(u,"&enddate=",enddate)
-    u = paste0(u,"&variables=",paste0(variables, collapse=","))
-    u = paste0(u,"&flags=true") #used to be an option
-    cat(paste0('\nAPI call: ',u,'\n\n'))
+    # u = paste0("https://data.streampulse.org/api?sitecode=",sitecode)
+    u = paste0("localhost:5000/api?sitecode=", sitecode)
+    if(!is.null(startdate)) u = paste0(u, "&startdate=", startdate)
+    if(!is.null(enddate)) u = paste0(u, "&enddate=", enddate)
+    u = paste0(u, "&variables=", paste0(variables, collapse=","))
+    u = paste0(u, "&flags=true") #used to be an option
+    cat(paste0('\nAPI call: ', u, '\n\n'))
 
     #retrieve json; read into r object
     if(is.null(token)){
@@ -108,7 +108,17 @@ request_data = function(sitecode, startdate=NULL, enddate=NULL, variables=NULL,
 
     if(length(d$data) == 1 && d$data == 'USGS_error'){
         stop(paste0('USGS servers are down. Try again later\n\t',
-            'or omit Depth_m and Discharge_m3s from variables requested.'),
+            'or omit Depth_m and/or Discharge_m3s from variables requested.'),
+            call.=FALSE)
+    }
+    if(length(d$data) == 1 && substr(d$data, 1, 11) == 'USGS_error:'){
+        gage_num = substr(d$data, 12, nchar(d$data))
+        stop(paste0('USGS server error. USGS gage ', gage_num,
+            '\n\tmay be missing data for the time range you requested.',
+            '\n\tCheck https://waterdata.usgs.gov/usa/nwis/uv?',
+            gage_num, ' to find out.\n\tYou can still use request_data for ',
+            'this site and time range, but you may have to\n\t',
+            'omit Depth_m and/or Discharge_m3s from variables requested.'),
             call.=FALSE)
     }
 
