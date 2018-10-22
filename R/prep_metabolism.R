@@ -612,13 +612,13 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     }
 
     # Select variables for model
-    if(model=="BASE"){
+    if(model == "BASE"){
         model_variables = c("solar.time","DO.obs","temp.water","light",
             "atmo.pressure")
-    }else{ # streamMetabolizer
+    } else { # streamMetabolizer
         model_variables = c("solar.time","DO.obs","DO.sat","depth",
             "temp.water","light")
-        if(type=="bayes") model_variables = c(model_variables,"discharge")
+        # if(type=="bayes") model_variables = c(model_variables,"discharge")
     }
 
     if(!all(model_variables %in% colnames(dd))){
@@ -626,6 +626,11 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         stop(paste0('Insufficient data to fit this model.\n\t',
             'Missing variable(s): ', paste0(missing, collapse=', ')),
             call.=FALSE)
+    }
+    if(model == 'streamMetabolizer' && type == 'bayes' &&
+            ! 'discharge' %in% colnames(dd)){
+        warning(paste("Without discharge data (or estimates), you'll have to",
+            "run fit_metabolism with pool_K600='none'."), call.=FALSE)
     }
 
     # Structure data, add class for model name

@@ -34,7 +34,8 @@
 #' @param variables character vector of variable names to request. To see which
 #'   variables are available for a given site, select a site from the dropdown
 #'   at \url{https://data.streampulse.org/visualize}. Omit this argument to
-#'   request all variables potentially useful for metabolism modeling.
+#'   request all variables potentially useful for metabolism modeling: c('DO_mgL','DOsat_pct','satDO_mgL','WaterPres_kPa',
+#'   'Depth_m','WaterTemp_C','Light_PAR','AirPres_kPa','Discharge_m3s').
 #' @param token a unique alphanumeric string for each registered user of
 #'   StreamPULSE. Only necessary for accessing embargoed data.
 #' @return returns a \code{list} containing two \code{data.frame}s.

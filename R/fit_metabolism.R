@@ -31,13 +31,11 @@
 #'   \code{streamMetabolizer}'s
 #'   \code{predict_metab} function (metabolism predictions), and additional
 #'   information about model performance and specifications.
-#' @param pool_K600 character. How should the model pool information among
+#' @param pool_K600 character. Should the model pool information among
 #'   days to get more consistent daily estimates for K600? Options (see Details
 #'   section of \code{streamMetabolizer}'s \code{mm_name} function for more):
 #'   \itemize{
 #'     \item \code{none}: no pooling of K600
-#'     \item \code{normal}: \eqn{K600 ~ N(mu, sigma)}
-#'     \item \code{linear}: \eqn{K600 ~ N(B[0] + B[1]*Q, sigma)}
 #'     \item \code{binned}: \eqn{K600 ~ N(B[Q_bin], sigma)} where \eqn{mu ~
 #'     N(mu_mu, mu_sigma)} and \eqn{sigma ~ N(sigma_mu, sigma_sigma)}
 #'   }
@@ -129,12 +127,12 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
     if(model=="streamMetabolizer"){
 
         #choose appropriate model specifications based on model type
-        if(model_type=='bayes'){
-            if(pool_K600 == 'none'){
-                message(paste0("pool_K600 can't be 'none' in Bayesian ",
-                    "framework.\n\tSetting it to 'binned'."))
-                pool_K600 = 'binned'
-            }
+        if(model_type == 'bayes'){
+            # if(pool_K600 == 'none'){
+            #     message(paste0("pool_K600 can't be 'none' in Bayesian ",
+            #         "framework.\n\tSetting it to 'binned'."))
+            #     pool_K600 = 'binned'
+            # }
             engine = 'stan'#; pool_K600 = 'binned'; proc_err = TRUE
         } else {
             if(pool_K600 == 'binned'){
@@ -164,7 +162,7 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
         # stop('a')
         # fitdata = fitdata2
         #get average log daily discharge and use it to parameterize k v. Q curve
-        if(engine == 'stan'){
+        if(engine == 'stan' && pool_K600 == 'binned'){
             addis = tapply(log(fitdata$discharge),
                 substr(fitdata$solar.time,1,10), mean)
             # sum(is.infinite(log(fitdata$discharge))
