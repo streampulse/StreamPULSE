@@ -45,6 +45,8 @@
 #'   function.
 #' @export
 #' @examples
+#' query_available_data(region='all')
+#'
 #' streampulse_data = request_data(sitecode='NC_Eno',
 #'     startdate='2016-06-10', enddate='2016-10-23')
 request_data = function(sitecode, startdate=NULL, enddate=NULL, variables=NULL,
