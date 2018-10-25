@@ -129,9 +129,8 @@ query_available_data = function(region=NULL, site=NULL, startdate=NULL,
     }
 
     #assemble url based on user input
-    # u = paste0("https://data.streampulse.org/query_available_data?sitecode=",
-    #     sitecode)
-    u = paste0("localhost:5000/query_available_data?")
+    u = "https://data.streampulse.org/query_available_data?"
+    # u = "localhost:5000/query_available_data?"
     if(!is.null(region)) u = paste0(u, "&region=", region)
     if(!is.null(site)) u = paste0(u, "&site=", site)
     if(!is.null(startdate)) u = paste0(u, "&startdate=", startdate)
