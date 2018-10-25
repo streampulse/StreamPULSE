@@ -1,4 +1,4 @@
-#' See what sites and dates are available in the StreamPULSE database
+#' View sites, dates, and variables available in the StreamPULSE database
 #'
 #' Uses StreamPULSE API to query data via MySQL.
 #'

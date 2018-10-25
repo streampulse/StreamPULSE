@@ -11,13 +11,11 @@ fit_metabolism(d, pool_K600 = "binned", err_obs_iid = TRUE,
 \arguments{
 \item{d}{the output of \link{prep_metabolism}.}
 
-\item{pool_K600}{character. How should the model pool information among
+\item{pool_K600}{character. Should the model pool information among
 days to get more consistent daily estimates for K600? Options (see Details
 section of \code{streamMetabolizer}'s \code{mm_name} function for more):
 \itemize{
   \item \code{none}: no pooling of K600
-  \item \code{normal}: \eqn{K600 ~ N(mu, sigma)}
-  \item \code{linear}: \eqn{K600 ~ N(B[0] + B[1]*Q, sigma)}
   \item \code{binned}: \eqn{K600 ~ N(B[Q_bin], sigma)} where \eqn{mu ~
   N(mu_mu, mu_sigma)} and \eqn{sigma ~ N(sigma_mu, sigma_sigma)}
 }}
@@ -96,6 +94,8 @@ please call its corresponding functions
 See the example section below for more.
 }
 \examples{
+query_available_data(region='all')
+
 streampulse_data = request_data(sitecode='NC_Eno',
     startdate='2016-06-10', enddate='2016-10-23')
 

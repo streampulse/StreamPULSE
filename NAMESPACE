@@ -3,4 +3,5 @@
 export(fit_metabolism)
 export(plot_output)
 export(prep_metabolism)
+export(query_available_data)
 export(request_data)
