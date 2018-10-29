@@ -204,6 +204,10 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     if(! 'list' %in% class(zq_curve)){
         stop('Argument "zq_curve" must be a list.', call.=FALSE)
     }
+    if(type == 'mle'){
+        stop('MLE mode is not currently available. Please use type="bayes".',
+            call.=FALSE)
+    }
 
     ab_supplied = zq_supplied = FALSE
     using_zq_curve = !all(unlist(lapply(zq_curve[c('sensor_height',
