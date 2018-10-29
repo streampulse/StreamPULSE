@@ -129,8 +129,8 @@ query_available_data = function(region=NULL, site=NULL, startdate=NULL,
     }
 
     #assemble url based on user input
-    u = "https://data.streampulse.org/query_available_data?"
     # u = "localhost:5000/query_available_data?"
+    u = "https://data.streampulse.org/query_available_data?"
     if(!is.null(region)) u = paste0(u, "&region=", region)
     if(!is.null(site)) u = paste0(u, "&site=", site)
     if(!is.null(startdate)) u = paste0(u, "&startdate=", startdate)
@@ -169,6 +169,7 @@ query_available_data = function(region=NULL, site=NULL, startdate=NULL,
             format="%a, %d %b %Y %T GMT")
         d$sites$lastRecord = as.POSIXct(d$sites$lastRecord, tz="UTC",
             format="%a, %d %b %Y %T GMT")
+        d$sites$usgsGage = as.numeric(d$sites$usgsGage)
     }
     if('variables' %in% names(d)){
         d$variables = data.frame('variables'=sort(strsplit(d$variables,
