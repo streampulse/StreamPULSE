@@ -463,9 +463,9 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     #correct any negative or 0 depth values (these break streamMetabolizer)
     if('Depth_m' %in% vd){
         if(any(na.omit(dd$Depth_m) <= 0)){
-            warning('Depth values <= 0 detected. Replacing with 0.000001.',
+            warning('Depth values <= 0 detected. Replacing with 0.01 m.',
                 call.=FALSE)
-            dd$Depth_m[dd$Depth_m <= 0] = 0.000001
+            dd$Depth_m[dd$Depth_m <= 0] = 0.01
         }
     }
 
@@ -522,9 +522,9 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     #correct any negative or 0 discharge values
     if('Discharge_m3s' %in% vd){
         if(any(na.omit(dd$Discharge_m3s) <= 0)){
-            warning('Discharge values <= 0 detected. Replacing with 0.000001.',
+            warning('Discharge values <= 0 detected. Replacing with 0.01.',
                 call.=FALSE)
-            dd$Discharge_m3s[dd$Discharge_m3s <= 0] = 0.000001
+            dd$Discharge_m3s[dd$Discharge_m3s <= 0] = 0.01
         }
     }
 
@@ -564,17 +564,17 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         if("Depth_m" %in% vd){
             dd$depth = dd$Depth_m
 
-            if(! using_level){
-                warning(paste0('Passing "Depth_m" values from StreamPULSE database',
-                    ' directly to streamMetabolizer.\n\tMetabolism estimates will',
-                    ' be best if "Depth_m" represents mean depth\n\tfor the ',
-                    'area defined by the width of the stream and the oxygen\n\t',
-                    'turnover distance. "Depth_m" may also represent depth-at-gage',
-                    ' or,\n\tworse, level-at-gage. These may result in poor ',
-                    'metabolism estimates.\n\tYou may want to use zq_curve',
-                    '\n\tor estimate_areal_depth.'),
-                    call.=FALSE)
-            }
+            # if(! using_level){
+            #     warning(paste0('Passing "Depth_m" values from StreamPULSE database',
+            #         ' directly to streamMetabolizer.\n\tMetabolism estimates will',
+            #         ' be best if "Depth_m" represents mean depth\n\tfor the ',
+            #         'area defined by the width of the stream and the oxygen\n\t',
+            #         'turnover distance. "Depth_m" may also represent depth-at-gage',
+            #         ' or,\n\tworse, level-at-gage. These may result in poor ',
+            #         'metabolism estimates.\n\tYou may want to use zq_curve ',
+            #         'or estimate_areal_depth.'),
+            #         call.=FALSE)
+            # }
 
         } else {
 
@@ -651,7 +651,11 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         BASE = setClass("BASE", contains="data.frame")
         outdata = as(fitdata, "BASE")
     }else if(model=="streamMetabolizer"){
-        fitdata = select_(dd, .dots=model_variables)
+        if('discharge' %in% colnames(dd)){
+            fitdata = select_(dd, .dots=c(model_variables, 'discharge'))
+        } else {
+            fitdata = select_(dd, .dots=model_variables)
+        }
         # streamMetabolizer = create_sm_class()
         outdata = as(fitdata, "streamMetabolizer")
         outdata@type = type
