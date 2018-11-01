@@ -61,6 +61,10 @@ request_data = function(sitecode, startdate=NULL, enddate=NULL, variables=NULL,
     if(length(sitecode)>1){
         stop("Please only enter one site to model.", call.=FALSE)
     }
+    if(! grepl('\\w+_\\w+', sitecode)){
+        stop("sitecode must be something like REGION_SITE, e.g. 'NC_Eno'.",
+            call.=FALSE)
+    }
     if(!is.null(startdate) & !is.null(enddate)){
         if(as.Date(enddate) < as.Date(startdate)){
             stop("Start date is after end date.", call.=FALSE)
