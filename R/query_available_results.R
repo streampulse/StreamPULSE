@@ -1,11 +1,7 @@
-#' View a list of results of streamMetabolizer
+#' View metabolism model results available on the StreamPULSE server.
 #'
-#' Uses StreamPULSE API to query data via MySQL.
-#'
-#' Only records fully encompassing the range defined by startdate and enddate
-#' will be returned UNLESS variable is also specified. In that case,
-#' any sites for which that variable has been measured at any point during the
-#' specified date range will be returned.
+#' Uses StreamPULSE API to query data. To download model results, see
+#' \code{request_results}.
 #'
 #' The data returned by this function depend on which of the input parameters
 #' are specified and which are omitted. See examples for all possible ways
@@ -17,51 +13,27 @@
 #'   argument to 'all' for a list of all available region and site abbreviations.
 #' @param site string representing site. Must be a StreamPULSE site
 #'   abbreviation like 'Eno' or 'LV'.
-#' @param startdate date string formatted 'YYYY-MM-DD'. Must be specified if
-#'   enddate is. Only records fully
-#'   encompassing the range defined by startdate and enddate will be returned.
-#'   See details for a caveat.
-#' @param enddate date string formatted 'YYYY-MM-DD'. Must be specified if
-#'   enddate is. Only records fully
-#'   encompassing the range defined by startdate and enddate will be returned.
-#'   See details for a caveat.
-#' @param variable string representing a StreamPULSE variable name, such as
-#'   'DO_mgL'. Set this argument to 'all' for a list of all variable names.
-#' @return returns a \code{list} containing one or more data frames containing
-#'   site, variable, or time data. Which of these data frames is/are returned
-#'   depends on which of the input parameters are specified. See examples
-#' @seealso \code{\link{request_data}} for downloading StreamPULSE data.
+#' @param year string or numeric representing year, e.g. '2015'.
+#' @return returns a list containing a single data frame with region, site,
+#'   and year columns.
+#' @seealso \code{\link{request_results}} for downloading StreamPULSE model
+#'   outputs.
 #' @export
 #' @examples
-#' #View all sites in region
-#' query_available_data(region='AZ')
+#' View all available model results from region
+#' query_available_results(region='NC')
 #'
-#' #View all sites in all regions
-#' query_available_data(region='all')
+#' View all available model results from all regions
+#' query_available_results(region='all')
 #'
-#' #View all variables at site and available time range for site
-#' query_available_data(region='AZ', site='LV')
+#' View all available model results from site
+#' query_available_results(region='NC', site='Eno')
 #'
-#' #View all sites at which variable has been sampled
-#' query_available_data(variable='Depth_m')
+#' View all available model results from year
+#' query_available_results(year=2017)
 #'
-#' #View full list of variables
-#' query_available_data(variable='all')
-#'
-#' #View all sites for which temporal coverage encompasses the specified dates
-#' query_available_data(startdate='2016-06-13', enddate='2017-11-01')
-#'
-#' #View all variables available at site, encompassing date range
-#' query_available_data(region='NC', site='Eno', startdate='2017-01-08',
-#'     enddate='2017-04-09')
-#'
-#' #View date range available for variable at site
-#' query_available_data(region='NC', site='Eno', variable='WaterTemp_C')
-#'
-#' #View all sites at which variable has been sampled within date range.
-#' #This one takes a while to run.
-#' query_available_data(startdate='2017-01-08', enddate='2017-04-09',
-#'     variable='DO_mgL')
+#' View all available model results from region and year
+#' query_available_results(region='NC', year=2017)
 query_available_results = function(region=NULL, site=NULL, year=NULL){
 
     #basic checks (more in Flask code)
@@ -96,8 +68,8 @@ query_available_results = function(region=NULL, site=NULL, year=NULL){
     }
 
     #assemble url based on user input
-    u = "localhost:5000/query_available_results?"
-    # u = "https://data.streampulse.org/query_available_results?"
+    # u = "localhost:5000/query_available_results?"
+    u = "https://data.streampulse.org/query_available_results?"
     if(!is.null(region)) u = paste0(u, "&region=", region)
     if(!is.null(site)) u = paste0(u, "&site=", site)
     if(!is.null(year)) u = paste0(u, "&year=", year)

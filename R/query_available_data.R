@@ -1,6 +1,7 @@
 #' View sites, dates, and variables available in the StreamPULSE database
 #'
-#' Uses StreamPULSE API to query data via MySQL.
+#' Uses StreamPULSE API to query data via MySQL. To download data, see
+#' \code{request_data}.
 #'
 #' Only records fully encompassing the range defined by startdate and enddate
 #' will be returned UNLESS variable is also specified. In that case,
@@ -27,7 +28,7 @@
 #'   See details for a caveat.
 #' @param variable string representing a StreamPULSE variable name, such as
 #'   'DO_mgL'. Set this argument to 'all' for a list of all variable names.
-#' @return returns a \code{list} containing one or more data frames containing
+#' @return returns a list containing one or more data frames containing
 #'   site, variable, or time data. Which of these data frames is/are returned
 #'   depends on which of the input parameters are specified. See examples
 #' @seealso \code{\link{request_data}} for downloading StreamPULSE data.
