@@ -13,7 +13,7 @@
 #'   argument to 'all' for a list of all available region and site abbreviations.
 #' @param site string representing site. Must be a StreamPULSE site
 #'   abbreviation like 'Eno' or 'LV'.
-#' @param year string or numeric representing year, e.g. '2015'.
+#' @param year string or numeric representing year, e.g. '2015' or 2015.
 #' @return returns a list containing a single data frame with region, site,
 #'   and year columns.
 #' @seealso \code{\link{request_results}} for downloading StreamPULSE model

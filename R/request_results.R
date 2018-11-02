@@ -1,57 +1,51 @@
 #' Retrieve model results from the StreamPULSE server
 #'
-#' Uses StreamPULSE API to retrieve \code{.rds} objects from streamMetabolizer
+#' Uses StreamPULSE API to retrieve \code{.rds} objects containing the outputs
+#' of streamMetabolizer
 #' runs for specific siteyears. To view available model results, see
 #' \code{query_available_results}. Visit the data portal at
 #' \url{http://data.streampulse.org:3838/streampulse_diagnostic_plots/}
 #' to visualize model results via a browser.
 #'
-#' Request data for a single region and site within the StreamPULSE database.
-#' All sites are embargoed for 1 year or more from the time they first appear
-#' in the database. Embargoed data are only available to the user who submits
-#' them, and can be accessed via a unique token.
+#' Request results for a single region, site, and year.
+#' Some sites are "embargoed," meaning results from those sites are
+#' kept private and can only be accessed by authorized users.
+#' If you are authorized, you can access your embargoed results using
+#' a unique token, which currently you can only receive by emailing StreamPULSE
+#' developer Mike Vlah (\email{vlahm13@gmail.com}).
 #'
 #' @author Mike Vlah, \email{vlahm13@gmail.com}
-#' @author Aaron Berdanier
 #' @param sitecode underscore-separated region and site code, e.g. 'NC_Eno'.
 #'   Full list of regions and site codes available at
 #'   \url{https://data.streampulse.org/sitelist}. Or, you can use the
 #'   \code{query_available_data} function in this package.
-#' @param startdate date string formatted 'YYYY-MM-DD', representing the first
-#'   day of data to be requested.
-#'   If data coverage does not extend this far back in time, the argument
-#'   will be adjusted to the first day with available data. Omit this argument to
-#'   include all records up to the first available. To see the range of available
-#'   dates for a particular site, use the
-#'   \code{query_available_data} function in this package.
-#' @param enddate date string formatted 'YYYY-MM-DD', representing the last
-#'   day of data to be requested.
-#'   If data coverage does not extend this far in time, the argument
-#'   will be adjusted to the last day with available data. Omit this argument to
-#'   include all records up to the last available. To see the range of available
-#'   dates for a particular site, use the
-#'   \code{query_available_data} function in this package.
-#' @param variables character vector of variable names to request. To see which
-#'   variables are available for a given site, use the
-#'   \code{query_available_data} function in this package.
-#'   Omit this argument to
-#'   request all variables potentially useful for metabolism modeling: c('DO_mgL','DOsat_pct','satDO_mgL','WaterPres_kPa',
-#'   'Depth_m','WaterTemp_C','Light_PAR','AirPres_kPa','Discharge_m3s').
+#' @param year string or numeric representing year, e.g. '2015' or 2015.
 #' @param token a unique alphanumeric string for each registered user of
-#'   StreamPULSE. Only necessary for accessing embargoed data.
-#' @return returns a \code{list} containing two \code{data.frame}s.
-#'   The first contains all requested
-#'   data. The second contains site metadata. Variable names and corresponding
-#'   values are stacked in two long columns. Use \code{prep_metabolism} to
-#'   format the output of this function.
-#' @seealso \code{\link{prep_metabolism}} for organizing data returned by this
-#'   function.
+#'   StreamPULSE. Only necessary for accessing embargoed results. Email
+#'   StreamPULSE developer Mike Vlah (\email{vlahm13@gmail.com}) to receive
+#'   your token.
+#' @return returns a list containing an unfortunately limited collection of
+#'   information about the "best" model result we have on record for the
+#'   site and year requested. If the output of \code{streamMetabolizer}'s
+#'   \code{metab}
+#'   function is a variable called \code{x}, this function will give you x@fit,
+#'   x@data, and x@data_daily. Likewise, if the output of \code{StreamPULSE}'s
+#'   fit_metabolism is a variable called \code{y}, this function will give you
+#'   y$fit@fit, y$fit@data, and y$fit@data_daily. In the future, this function
+#'   will return a lot more relevant information, but at the moment only these
+#'   three list elements are stored on our server for each "best" model run.
+#'
+#'   Model "bestness" is determined by an automatic
+#'   comparison of five criteria each time a new model is fit: 1) proportion of
+#'   daily GPP estimates that go negative; 2) proportion of daily ER estimates
+#'   that go positive; 3) correlation between daily ER and K600;
+#'   4) maximum daily K600; and 5) temporal coverage. A score is assigned
+#'   for each of these criteria, and an aggregate score is determined.
+#' @seealso \code{\link{query_available_results}} for determining which models
+#'  are available for download.
 #' @export
 #' @examples
-#' query_available_data(region='all')
-#'
-#' streampulse_data = request_data(sitecode='NC_Eno',
-#'     startdate='2016-06-10', enddate='2016-10-23')
+#' res = query_available_results(sitecode='FL_NR1000', year=2016)
 request_results = function(sitecode, year, token=NULL){
 
     #basic checks (more in Flask code)
@@ -71,9 +65,10 @@ request_results = function(sitecode, year, token=NULL){
     }
 
     #assemble url based on user input
-    # u = paste0("https://data.streampulse.org/request_results?sitecode=", sitecode)
-    u = paste0("localhost:5000/request_results?sitecode=", sitecode,
-        "&year=", year)
+    u = paste0("https://data.streampulse.org/request_results?sitecode=",
+        sitecode, "&year=", year)
+    # u = paste0("localhost:5000/request_results?sitecode=", sitecode,
+    #     "&year=", year)
     cat(paste0('\nAPI call: ', u, '\n\n'))
 
     #retrieve raw rds binary from response

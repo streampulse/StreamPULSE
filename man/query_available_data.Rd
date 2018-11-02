@@ -29,12 +29,13 @@ See details for a caveat.}
 'DO_mgL'. Set this argument to 'all' for a list of all variable names.}
 }
 \value{
-returns a \code{list} containing one or more data frames containing
+returns a list containing one or more data frames containing
   site, variable, or time data. Which of these data frames is/are returned
   depends on which of the input parameters are specified. See examples
 }
 \description{
-Uses StreamPULSE API to query data via MySQL.
+Uses StreamPULSE API to query data via MySQL. To download data, see
+\code{request_data}.
 }
 \details{
 Only records fully encompassing the range defined by startdate and enddate
