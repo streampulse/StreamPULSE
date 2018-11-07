@@ -26,14 +26,22 @@
 #'   your token.
 #' @return returns a list containing an unfortunately limited collection of
 #'   information about the "best" model result we have on record for the
-#'   site and year requested. If the output of \code{streamMetabolizer}'s
-#'   \code{metab}
-#'   function is a variable called \code{x}, this function will give you x@fit,
-#'   x@data, and x@data_daily. Likewise, if the output of \code{StreamPULSE}'s
-#'   fit_metabolism is a variable called \code{y}, this function will give you
-#'   y$fit@fit, y$fit@data, and y$fit@data_daily. In the future, this function
-#'   will return a lot more relevant information, but at the moment only these
-#'   three list elements are stored on our server for each "best" model run.
+#'   site and year requested. The two main items in this list are
+#'   \code{model_results} and \code{predictions}. The former contains a subset
+#'   of the details returned by \code{streamMetabolizer::metab}.
+#'   The latter contains the output of \code{streamMetabolizer::predict_metab}.
+#'   Following is a bit more information about the former.
+#'
+#'   If the output of \code{streamMetabolizer::metab}
+#'   is a variable called \code{x}, \code{model_results} includes x@fit,
+#'   x@data, and x@data_daily. Likewise, if the output of
+#'   \code{StreamPULSE::fit_metabolism} (which calls \code{metab})
+#'   is a variable called \code{y}, \code{model_results} includes
+#'   y$fit@fit, y$fit@data, and y$fit@data_daily.
+#'
+#'   In the future, this function
+#'   may return a lot more relevant information, but at the moment only these
+#'   elements are stored on our server for each "best" model run.
 #'
 #'   Model "bestness" is determined by an automatic
 #'   comparison of five criteria each time a new model is fit: 1) proportion of
@@ -45,7 +53,9 @@
 #'  are available for download.
 #' @export
 #' @examples
-#' res = query_available_results(sitecode='FL_NR1000', year=2016)
+#' res = request_results(sitecode='FL_NR1000', year=2016)
+#' res$predictions
+#' res$model_results$fit$daily
 request_results = function(sitecode, year, token=NULL){
 
     #basic checks (more in Flask code)
@@ -64,12 +74,12 @@ request_results = function(sitecode, year, token=NULL){
         stop('year must be 4 numerical digits.', call.=FALSE)
     }
 
-    #assemble url based on user input
+    #assemble api request for model output based on user input
     u = paste0("https://data.streampulse.org/request_results?sitecode=",
         sitecode, "&year=", year)
     # u = paste0("localhost:5000/request_results?sitecode=", sitecode,
     #     "&year=", year)
-    cat(paste0('\nAPI call: ', u, '\n\n'))
+    cat(paste0('\nAPI call for model output:\n', u, '\n'))
 
     #retrieve raw rds binary from response
     if(is.null(token)){
@@ -94,5 +104,36 @@ request_results = function(sitecode, year, token=NULL){
     close(con)
     mod_results = readRDS(tmp_filename)
 
-    return(mod_results)
+    #assemble api request for model predictions based on same input
+    u = paste0("https://data.streampulse.org/request_predictions?sitecode=",
+        sitecode, "&year=", year)
+    # u = paste0("localhost:5000/request_predictions?sitecode=", sitecode,
+    #     "&year=", year)
+    cat(paste0('\nAPI call for model predictions:\n', u, '\n'))
+
+    #retrieve raw rds binary from response
+    if(is.null(token)){
+        r = httr::GET(u)
+    }else{
+        r = httr::GET(u, httr::add_headers(Token = token))
+    }
+    raw = try(httr::content(r), silent=TRUE)
+
+    #check for errors
+    if(class(raw) == 'try-error'){
+        stop(paste0('Unable to process request. Please check your\n\t',
+            'arguments.'), call.=FALSE)
+    }
+    if(length(raw) == 1 && ! is.null(raw$error)){
+        stop(raw$error, call.=FALSE)
+    }
+
+    tmp_filename = tempfile('rdata_temp', fileext='.rds')
+    con = file(tmp_filename, "wb") #open temp file
+    writeBin(raw, con) #write raw rds binary to temp file
+    close(con)
+    predictions = readRDS(tmp_filename)
+
+    out = list('model_results'=mod_results, 'predictions'=predictions)
+    return(out)
 }

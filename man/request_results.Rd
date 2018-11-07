@@ -22,14 +22,22 @@ your token.}
 \value{
 returns a list containing an unfortunately limited collection of
   information about the "best" model result we have on record for the
-  site and year requested. If the output of \code{streamMetabolizer}'s
-  \code{metab}
-  function is a variable called \code{x}, this function will give you x@fit,
-  x@data, and x@data_daily. Likewise, if the output of \code{StreamPULSE}'s
-  fit_metabolism is a variable called \code{y}, this function will give you
-  y$fit@fit, y$fit@data, and y$fit@data_daily. In the future, this function
-  will return a lot more relevant information, but at the moment only these
-  three list elements are stored on our server for each "best" model run.
+  site and year requested. The two main items in this list are
+  \code{model_results} and \code{predictions}. The former contains a subset
+  of the details returned by \code{streamMetabolizer::metab}.
+  The latter contains the output of \code{streamMetabolizer::predict_metab}.
+  Following is a bit more information about the former.
+
+  If the output of \code{streamMetabolizer::metab}
+  is a variable called \code{x}, \code{model_results} includes x@fit,
+  x@data, and x@data_daily. Likewise, if the output of
+  \code{StreamPULSE::fit_metabolism} (which calls \code{metab})
+  is a variable called \code{y}, \code{model_results} includes
+  y$fit@fit, y$fit@data, and y$fit@data_daily.
+
+  In the future, this function
+  may return a lot more relevant information, but at the moment only these
+  elements are stored on our server for each "best" model run.
 
   Model "bestness" is determined by an automatic
   comparison of five criteria each time a new model is fit: 1) proportion of
@@ -55,7 +63,9 @@ a unique token, which currently you can only receive by emailing StreamPULSE
 developer Mike Vlah (\email{vlahm13@gmail.com}).
 }
 \examples{
-res = query_available_results(sitecode='FL_NR1000', year=2016)
+res = request_results(sitecode='FL_NR1000', year=2016)
+res$predictions
+res$model_results$fit$daily
 }
 \seealso{
 \code{\link{query_available_results}} for determining which models
