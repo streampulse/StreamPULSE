@@ -5,7 +5,7 @@
 StreamPULSE is a community of researchers working to
 answer fundamental questions about ecosystem production and
 respiration in streams and rivers. The StreamPULSE project
-[streampulse.org]
+[streampulse.org](http://www.streampulse.org)
 includes online tools for viewing, archiving, and cleaning data
 submitted by researchers from around the globe. It leverages 
 metabolism modeling frameworks
@@ -14,7 +14,7 @@ and [BASE](https://github.com/dgiling/BASE).
 This package facilitates 
 data acquisition from the StreamPULSE database, data
 supplementation where necessary, formatting for streamMetabolizer
-or BASE, as well as model fitting and prediction.
+or BASE, model fitting and prediction, and visualization of model outputs.
 
 ---
 ### **Installation**
