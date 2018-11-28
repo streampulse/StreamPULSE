@@ -47,7 +47,7 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
         ylab='', xaxs='i', yaxs='i',
         ylim=c(llim, ulim), lwd=2, xaxt='n', bty='l',
         xlim=c(max(st, maxmin_day[1]), min(en, maxmin_day[2])))
-    mtext(expression(paste("O"[2] * " m"^"-2" * " d"^"-1" ~ '(g)')), side=2,
+    mtext(expression(paste("O"[2] * " (gm"^"-2" * " d"^"-1" * ')')), side=2,
         line=2.5, font=2)
 
     #split time and DO series into NA-less chunks for plotting polygons
@@ -104,7 +104,7 @@ cumulative_func = function (ts_full, st, en){
     text(rep(max(na_rm$DOY), 3), maxcumul, labels=round(maxcumul),
         pos=2, cex=0.8)
 
-    mtext(expression(paste("Cumulative O"[2] * " m"^"-2" * " d"^"-1" ~ '(g)')),
+    mtext(expression(paste("Cumulative O"[2] * " (gm"^"-2" * " d"^"-1" * ')')),
         2, line=2.3)
 
     axis(2, tcl=-0.2, hadj=0.7, las=1, cex.axis=0.7)
@@ -132,9 +132,9 @@ kernel_func = function(ts_full, main){
         col=c(NA, "purple1", "purple3", "purple4"))
     axis(1, tcl=-0.2, padj=-1)
     axis(2, tcl=-0.2, hadj=0.5, las=1)
-    mtext(expression(paste("GPP (gO"[2] * " m"^"-2" * " d"^"-1" * ")")),
+    mtext(expression(paste("GPP (gm"^"-2" * " d"^"-1" * ")")),
         1, line=1.8)
-    mtext(expression(paste("ER (gO"[2] * " m"^"-2" * " d"^"-1" * ")")),
+    mtext(expression(paste("ER (gm"^"-2" * " d"^"-1" * ")")),
         2, line=2)
     abline(0, -1, col='black', lty=3)
 }
@@ -193,7 +193,7 @@ O2_plot = function(mod_out, st, en, brush){
     }
 
     mtext('DOY', 1, font=1, line=1.5)
-    mtext('DO (mg/L)', 2, font=1, line=3)
+    mtext(expression(paste('DO (mgL'^'-1' * ')')), 2, font=1, line=2.5)
     lines(ustamp, mod_out$data$DO.mod,
         col='royalblue4')
 
@@ -228,14 +228,14 @@ KvQvER_plot = function(mod_out){
     plot(mod_out$fit$daily$K600_daily_mean, mod_out$fit$daily$ER_mean,
         col='darkgreen', ylab='', xlab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
-    mtext(expression(paste("Daily mean ER (g O"[2] * " m"^"-2" ~ ")")), side=2,
+    mtext(expression(paste("Daily mean ER (gm"^"-2" ~ ")")), side=2,
         line=2.5)
     mtext(bquote('Adj.' ~ R^2 * ':' ~ .(R2)), side=3, line=0, adj=1,
         cex=0.8, col='gray50')
     abline(mod, lty=2, col='gray50', lwd=2)
     plot(log(mod_out$data_daily$discharge.daily),
         mod_out$fit$daily$K600_daily_mean,
-        col='purple4', xlab='Daily mean Q (ln cms)', ylab='Daily mean K600',
+        col='purple4', xlab='Daily mean Q (log cms)', ylab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
 }
 
