@@ -34,6 +34,15 @@ plot_output = function(model_out){
 
     options(shiny.usecairo=TRUE)
 
+    #create mapping of input data fields and their pretty equivalents
+    varmap = list('DO.sat'=list('DO sat', 'DO sat (%)'),
+        'depth'=list('Depth', 'Depth (m)'),
+        'temp.water'=list('Water temp',
+            expression(paste('Water temp (', degree, 'C)'))),
+        'light'=list('PAR', 'Light (PAR)'),
+        'discharge'=list('Discharge',
+            expression(paste('Discharge (m'^3, 's'^-1, ')'))))
+
     #create data objects
     modOut = list(data=model_out$fit@data,
         data_daily=model_out$fit@data_daily, fit=model_out$fit@fit)
@@ -64,9 +73,37 @@ plot_output = function(model_out){
             href='https://data.streampulse.org/'))), inverse=TRUE,
             windowTitle='StreamPULSE Diagnostics',
             tabPanel('Model Performance',
-                fluidRow(
-                    column(10, offset=1, align='center',
-                        plotOutput('KvQvER', height='400px')
+                sidebarLayout(
+                    sidebarPanel(
+                        p(strong('Select DOY range:')),
+                        p('Drag blue bar to move fixed range',
+                            style=paste0('color:gray; font-size:80%;',
+                                'padding:0; margin:0')),
+                        p('Press play to autoscroll*',
+                            style='color:gray; font-size:80%'),
+                        htmlOutput('MPtime_slider'),
+                        p('Click any point to view its date.',
+                            style=paste0('color:gray; font-size:80%;')),
+                        p(paste('*Residuals based on linear relationship',
+                            'between daily mean K600 and log daily mean Q.'),
+                            style=paste0('color:gray; font-size:80%;')),
+                        width = 3
+                    ),
+                    mainPanel(
+                        fluidRow(
+                            column(6, align='left',
+                                plotOutput('KvER', height='auto',
+                                    click='KvER_click'),
+                                plotOutput('KvGPP', height='auto',
+                                    click='KvGPP_click')
+                            ),
+                            column(6, align='left',
+                                plotOutput('KvQ', height='auto',
+                                    click='KvQ_click'),
+                                plotOutput('QvKres', height='auto',
+                                    click='QvKres_click')
+                            )
+                        )
                     )
                 )
             ),
@@ -111,9 +148,12 @@ plot_output = function(model_out){
 
                     ),
                     column(3, align='center',
-                        plotOutput('cumul_legend', height='20px',
-                            width='auto'),
-                        plotOutput('cumul_plot', height='200px', width='auto'),
+                        p(strong(HTML('Cumulative O<sub>2</sub> (gm<sup>-2</sup>d<sup>-1</sup>)'))),
+                        tableOutput('cumul_metab'),
+                        br(),
+                        # plotOutput('cumul_legend', height='20px',
+                        #     width='auto'),
+                        # plotOutput('cumul_plot', height='200px', width='auto'),
                         plotOutput('kernel_legend', height='20px',
                             width='auto'),
                         plotOutput('kernel_plot', height='200px', width='auto')
