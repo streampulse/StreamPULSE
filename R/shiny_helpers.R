@@ -98,6 +98,7 @@ season_ts_func = function (ts_full, fit_daily, st, en, overlay=NULL){
 
 metab_legend = function(show_K600=FALSE){
 
+    # par(rep(0,4), oma=rep(0,4))
     par(mar=c(0,4,0,1), oma=rep(0,4))
     plot(1,1, axes=FALSE, type='n', xlab='', ylab='', bty='o')
     if(show_K600 == FALSE){
@@ -126,7 +127,7 @@ metab_legend = function(show_K600=FALSE){
 
 kernel_func = function(ts_full, main){
 
-    kernel = kde(na.omit(ts_full[, c('GPP', 'ER')]))
+    kernel = ks::kde(na.omit(ts_full[, c('GPP', 'ER')]))
     k_lim = max(abs(c(min(ts_full$ER, na.rm=TRUE),
         max(ts_full$GPP, na.rm=TRUE))))
     plot(kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',
@@ -150,7 +151,7 @@ kernel_legend = function(){
 }
 
 O2_plot = function(mod_out, st, en, brush, click, overlay='None',
-    xformat='DOY'){
+    xformat='DOY', varmap){
     # st=0; en=366
     # brush = list(xmin=1460617508, xmax=1464058124, ymin=8.816155, ymax=14.45195)
 
@@ -245,7 +246,7 @@ O2_plot = function(mod_out, st, en, brush, click, overlay='None',
 
 }
 
-O2_legend = function(overlay){
+O2_legend = function(overlay, varmap){
     par(mar=c(0,4,0,1), oma=rep(0,4))
     plot(1,1, axes=FALSE, type='n', xlab='', ylab='', bty='o')
     if(overlay == 'None'){
@@ -291,7 +292,7 @@ KvER_plot = function(mod_out, slice, click=NULL){
         click_x = slice$K600_daily_mean[click_ind]
         click_y = slice$ER_mean[click_ind]
         points(click_x, click_y, col='goldenrod1', pch=19, cex=2)
-        x_prop = rescale(click_x, c(0, 1), c(xmin, xmax))
+        x_prop = scales::rescale(click_x, c(0, 1), c(xmin, xmax))
         if(! is.na(x_prop) && x_prop > 0.5){
             text(click_x, click_y, '-', pos=2, font=2, col='white', cex=9)
             text(click_x, click_y, '- ', pos=2, font=2, col='white', cex=9)
@@ -328,7 +329,7 @@ KvGPP_plot = function(mod_out, slice, click=NULL){
         click_x = slice$K600_daily_mean[click_ind]
         click_y = slice$GPP_mean[click_ind]
         points(click_x, click_y, col='goldenrod1', pch=19, cex=2)
-        x_prop = rescale(click_x, c(0, 1), c(xmin, xmax))
+        x_prop = scales::rescale(click_x, c(0, 1), c(xmin, xmax))
         if(! is.na(x_prop) && x_prop > 0.5){
             text(click_x, click_y, '-', pos=2, font=2, col='white', cex=9)
             text(click_x, click_y, '- ', pos=2, font=2, col='white', cex=9)
@@ -375,7 +376,7 @@ KvQ_plot = function(mod_out, slicex, slicey, click=NULL){
         click_x = log_Q[click_ind_x]
         click_y = slicey$K600_daily_mean[click_ind_y]
         points(click_x, click_y, col='goldenrod1', pch=19, cex=2)
-        x_prop = rescale(click_x, c(0, 1), c(xmin, xmax))
+        x_prop = scales::rescale(click_x, c(0, 1), c(xmin, xmax))
         if(! is.na(x_prop) && x_prop > 0.5){
             text(click_x, click_y, '-', pos=2, font=2, col='white', cex=9)
             text(click_x, click_y, '- ', pos=2, font=2, col='white', cex=9)
@@ -393,18 +394,18 @@ QvKres_plot = function(mod_out, slicex, slicey, click=NULL){
     log_Q = log(slicex$discharge.daily)
 
     #get K residuals (based on K-Q linear relationship)
-    KQmod = lm(slicey$K600_daily_mean ~ log_Q)
+    KQmod = lm(slicey$K600_daily_mean ~ log_Q, na.action=na.exclude)
     KQrelat = fitted(KQmod)
-    if(length(KQrelat) != length(slicey$K600_daily_mean)){
-        if(is.na(slicey$K600_daily_mean[1])){
-            KQrelat = c(NA, KQrelat)
-        } else {
-            KQrelat = c(KQrelat, NA)
-        }
-    }
-    if(length(KQrelat) != length(slicey$K600_daily_mean)){
-        KQrelat = c(KQrelat, NA)
-    }
+    # if(length(KQrelat) != length(slicey$K600_daily_mean)){
+    #     if(is.na(slicey$K600_daily_mean[1])){
+    #         KQrelat = c(NA, KQrelat)
+    #     } else {
+    #         KQrelat = c(KQrelat, NA)
+    #     }
+    # }
+    # if(length(KQrelat) != length(slicey$K600_daily_mean)){
+    #     KQrelat = c(KQrelat, NA)
+    # }
 
     resid = slicey$K600_daily_mean - KQrelat
 
@@ -429,7 +430,7 @@ QvKres_plot = function(mod_out, slicex, slicey, click=NULL){
         click_x = log_Q[click_ind_x]
         click_y = resid[click_ind_y]
         points(click_x, click_y, col='goldenrod1', pch=19, cex=2)
-        x_prop = rescale(click_x, c(0, 1), c(xmin, xmax))
+        x_prop = scales::rescale(click_x, c(0, 1), c(xmin, xmax))
         if(! is.na(x_prop) && x_prop > 0.5){
             text(click_x, click_y, '-', pos=2, font=2, col='white', cex=9)
             text(click_x, click_y, '- ', pos=2, font=2, col='white', cex=9)

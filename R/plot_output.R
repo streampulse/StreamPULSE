@@ -27,12 +27,13 @@
 #' plot_output(modelfit)
 plot_output = function(model_out){
 
-    # library(shiny)
-    # library(Cairo)
-    # library(ks)
-    # library(scales)
-
     options(shiny.usecairo=TRUE)
+
+    #create data objects
+    modOut = list(data=model_out$fit@data,
+        data_daily=model_out$fit@data_daily, fit=model_out$fit@fit)
+    predictions = model_out$predictions
+    fitpred = list('mod_out'=modOut, 'predictions'=predictions)
 
     #create mapping of input data fields and their pretty equivalents
     varmap = list('DO.sat'=list('DO sat', 'DO sat (%)'),
@@ -43,11 +44,17 @@ plot_output = function(model_out){
         'discharge'=list('Discharge',
             expression(paste('Discharge (m'^3, 's'^-1, ')'))))
 
-    #create data objects
-    modOut = list(data=model_out$fit@data,
-        data_daily=model_out$fit@data_daily, fit=model_out$fit@fit)
-    predictions = model_out$predictions
-    fitpred = list('mod_out'=modOut, 'predictions'=predictions)
+    #populate overlay selector
+    vars_etc = colnames(fitpred$mod_out$data)
+    varinds = ! vars_etc %in% c('date', 'solar.time', 'DO.obs', 'DO.mod')
+    vars = vars_etc[varinds]
+
+    select_vars = vector('character', length=length(vars))
+    for(i in 1:length(vars)){
+        if(vars[i] %in% names(varmap)){
+            select_vars[i] = varmap[[vars[i]]][[1]]
+        }
+    }
 
     #initiate time slider:
     #convert POSIX time to DOY and UNIX time
@@ -92,15 +99,15 @@ plot_output = function(model_out){
                     mainPanel(
                         fluidRow(
                             column(6, align='left',
-                                plotOutput('KvER', height='auto',
+                                plotOutput('KvER', height='300px', width='auto',
                                     click='KvER_click'),
-                                plotOutput('KvGPP', height='auto',
+                                plotOutput('KvGPP', height='300px', width='auto',
                                     click='KvGPP_click')
                             ),
                             column(6, align='left',
-                                plotOutput('KvQ', height='auto',
+                                plotOutput('KvQ', height='300px', width='auto',
                                     click='KvQ_click'),
-                                plotOutput('QvKres', height='auto',
+                                plotOutput('QvKres', height='300px', width='auto',
                                     click='QvKres_click')
                             )
                         )
@@ -139,12 +146,11 @@ plot_output = function(model_out){
                     column(9, align='center',
                         plotOutput('metab_legend', height='20px',
                             width='auto'),
-
-                        plotOutput('metab_plot', height='200px', width='auto'),
+                        plotOutput('metab_plot', height='300px', width='auto'),
                         plotOutput('O2_legend', height='20px',
                             width='auto'),
                         plotOutput('O2_plot', brush='O2_brush',
-                            height='200px', width='auto')
+                            height='300px', width='auto')
 
                     ),
                     column(3, align='center',
@@ -156,7 +162,14 @@ plot_output = function(model_out){
                         # plotOutput('cumul_plot', height='200px', width='auto'),
                         plotOutput('kernel_legend', height='20px',
                             width='auto'),
-                        plotOutput('kernel_plot', height='200px', width='auto')
+                        plotOutput('kernel_plot', height='200px', width='auto'),
+                        br(),
+                        selectInput('metab_overlay', 'Model param overlay',
+                            list('None', 'mean daily K600'), selected='None'),
+                        selectInput('O2_overlay', 'Input data overlay',
+                            as.list(c('None', select_vars)), selected='None'),
+                        radioButtons('xformat', 'Series x-axis', inline=TRUE,
+                            list('DOY', 'Date'), selected='DOY')
                     )
                 ),
                 br(),
@@ -190,6 +203,67 @@ plot_output = function(model_out){
             }
         })
 
+        output$MPtime_slider = renderUI({
+
+            if(!is.null(fitpred)){
+
+                #convert POSIX time to DOY and UNIX time
+                MPDOY = as.numeric(gsub('^0+', '',
+                    strftime(fitpred$mod_out$data$solar.time, format="%j")))
+
+                #get DOY bounds for slider
+                MPDOYmin = ifelse(MPDOY[1] %in% 365:366, 1, MPDOY[1])
+                MPDOYmax = MPDOY[length(MPDOY)]
+
+                sliderInput("MPrange", label=NULL,
+                    min=MPDOYmin, max=MPDOYmax, value=c(MPDOYmin, MPDOYmax),
+                    ticks=TRUE, step=3,
+                    animate=animationOptions(interval=2000)
+                )
+            }
+        })
+
+        #update model performance data frames based on time range selection
+        get_slices = eventReactive({
+            input$MPrange
+        }, {
+
+            if(! is.null(fitpred)){
+                mod_out = fitpred$mod_out
+
+                MPstart = input$MPrange[1]
+                MPend = input$MPrange[2]
+
+                #convert POSIX time to DOY and UNIX time
+                DOY = as.numeric(gsub('^0+', '', strftime(mod_out$data$solar.time,
+                    format="%j")))
+                date = as.Date(gsub('^0+', '', strftime(mod_out$data$solar.time,
+                    format="%Y-%m-%d")))
+
+                # replace initial DOYs of 365 or 366 (solar date in previous calendar year) with 1
+                if(DOY[1] %in% 365:366){
+                    DOY[DOY %in% 365:366 & 1:length(DOY) < length(DOY)/2] = 1
+                }
+
+                #filter data by date bounds specified in time slider
+                xmin_ind = match(MPstart, DOY)
+                if(is.na(xmin_ind)) xmin_ind = 1
+                xmin = date[xmin_ind]
+
+                xmax_ind = length(DOY) - match(MPend, rev(DOY)) + 1
+                if(is.na(xmax_ind)) xmax_ind = nrow(mod_out$data)
+                xmax = date[xmax_ind]
+
+                daily_slice = mod_out$fit$daily[mod_out$fit$daily$date <= xmax &
+                        mod_out$fit$daily$date >= xmin,]
+                data_daily_slice = mod_out$data_daily[mod_out$data_daily$date <= xmax &
+                        mod_out$data_daily$date >= xmin,]
+
+                out = list(daily_slice=daily_slice, data_daily_slice=data_daily_slice,
+                    mod_out=mod_out)
+            }
+        })
+
         observeEvent({
             input$range
         }, {
@@ -198,39 +272,27 @@ plot_output = function(model_out){
 
             if(!is.null(start) && !is.null(end)){
                 output$metab_legend = renderPlot({
-                    metab_legend()
-                })
-
-                output$cumul_legend = renderPlot({
-                    cumul_legend()
+                    if(input$metab_overlay != 'None'){
+                        metab_legend(show_K600=TRUE)
+                    } else {
+                        metab_legend(show_K600=FALSE)
+                    }
                 })
 
                 output$metab_plot = renderPlot({
                     ts_full = processing_func(fitpred$predictions, st=start,
                         en=end)
-                    par(mar=c(1,4,0,1), oma=rep(0,4))
-                    season_ts_func(ts_full, TRUE, st=start, en=end)
-                })
-
-                output$cumul_plot = renderPlot({
-                    ts_full = processing_func(fitpred$predictions, st=start,
-                        en=end)
-                    par(mar=c(3,3.5,0.2,0.5), oma=rep(0,4))
-                    cumulative_func(ts_full, st=start, en=end)
-                })
-
-                output$O2_legend = renderPlot({
-                    O2_legend()
+                    par(mar=c(1,4,0,4), oma=rep(0,4))
+                    daily = fitpred$mod_out$fit$daily
+                    daily$doy = as.numeric(gsub('^0+', '',
+                        strftime(daily$date, format="%j")))
+                    daily = daily[daily$doy > start & daily$doy < end,]
+                    season_ts_func(ts_full, daily, st=start, en=end,
+                        input$metab_overlay)
                 })
 
                 output$kernel_legend = renderPlot({
                     kernel_legend()
-                })
-
-                output$O2_plot = renderPlot({
-                    par(mar=c(3,4,0,1), oma=rep(0,4))
-                    O2_plot(mod_out=fitpred$mod_out, st=start, en=end,
-                        input$O2_brush)
                 })
 
                 output$kernel_plot = renderPlot({
@@ -239,12 +301,111 @@ plot_output = function(model_out){
                     par(mar=c(3,3.5,0,.5), oma=rep(0,4))
                     kernel_func(ts_full, 'Name and Year')
                 })
+
+                output$O2_legend = renderPlot({
+                    O2_legend(overlay=input$O2_overlay, varmap=varmap)
+                })
+
+                output$O2_plot = renderPlot({
+                    par(mar=c(3,4,0,4), oma=rep(0,4))
+                    O2_plot(mod_out=fitpred$mod_out, st=start, en=end,
+                        brush=input$O2_brush, overlay=input$O2_overlay,
+                        xformat=input$xformat, varmap=varmap)
+                })
+
+                output$cumul_metab = renderTable({
+                    ts_full = processing_func(fitpred$predictions, st=start,
+                        en=end)
+                    na_rm = na.omit(ts_full)
+                    gppsum = sum(na_rm$GPP, na.rm=TRUE)
+                    ersum = sum(na_rm$ER, na.rm=TRUE)
+                    nepsum = sum(na_rm$NPP, na.rm=TRUE)
+                    return(data.frame('GPP'=gppsum, 'ER'=ersum, 'NEP'=nepsum))
+                }, striped=TRUE)
             }
         })
 
-        output$KvQvER = renderPlot({
-            try(KvQvER_plot(mod_out=modOut), silent=TRUE)
+        observeEvent({
+            input$MPrange
+        }, {
+
+            slices = get_slices()
+            mod_out = slices$mod_out
+            MPstart = input$MPrange[1]
+            MPend = input$MPrange[2]
+
+            if(!is.null(MPstart) && !is.null(MPend)){
+
+                output$KvER = renderPlot({
+                    if(!is.null(fitpred$mod_out)){
+                        KvER_plot(mod_out=fitpred$mod_out,
+                            slice=slices$daily_slice)
+                    }
+                })
+
+                output$KvQ = renderPlot({
+                    if(!is.null(fitpred$mod_out)){
+                        KvQ_plot(mod_out=fitpred$mod_out,
+                            slicex=slices$data_daily_slice,
+                            slicey=slices$daily_slice)
+                    }
+                })
+
+                output$KvGPP = renderPlot({
+                    if(!is.null(fitpred$mod_out)){
+                        KvGPP_plot(mod_out=fitpred$mod_out,
+                            slice=slices$daily_slice)
+                    }
+                })
+
+                output$QvKres = renderPlot({
+                    if(!is.null(fitpred$mod_out)){
+                        QvKres_plot(mod_out=fitpred$mod_out,
+                            slicex=slices$data_daily_slice,
+                            slicey=slices$daily_slice)
+                    }
+                })
+            }
+
         })
+
+        #replot when a click is registered; don't react when click handler flushes
+        observeEvent({
+            if (! is.null(input$KvER_click$x) ||
+                    ! is.null(input$KvQ_click$x) ||
+                    ! is.null(input$QvKres_click$x) ||
+                    ! is.null(input$KvGPP_click$x)) TRUE
+            else NULL
+        }, {
+
+            slices = get_slices()
+            mod_out = slices$mod_out
+            MPstart = input$MPrange[1]
+            MPend = input$MPrange[2]
+
+            output$KvER = renderPlot({
+                KvER_plot(mod_out=mod_out,
+                    slice=slices$daily_slice, click=isolate(input$KvER_click))
+            })
+
+            output$KvQ = renderPlot({
+                KvQ_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
+                    slicey=slices$daily_slice, click=isolate(input$KvQ_click))
+            })
+
+            output$KvGPP = renderPlot({
+                KvGPP_plot(mod_out=mod_out,
+                    slice=slices$daily_slice, click=isolate(input$KvGPP_click))
+            })
+
+            output$QvKres = renderPlot({
+                if(!is.null(mod_out)){
+                    QvKres_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
+                        slicey=slices$daily_slice, click=isolate(input$QvKres_click))
+                }
+            })
+
+        }, ignoreNULL=TRUE)
 
     }
 
