@@ -9,7 +9,10 @@
 FindandCollect_airpres = function(lat, long, start_datetime, end_datetime) {
     tf = tempfile()
     download.file("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-history.txt",tf,mode="wb")
-    noaa.sites <- read.fwf(tf, skip = 22, header = F, widths = c(7,6,30, 5, 3, 6, 8, 9, 8, 9, 8), comment.char = "", col.names = c("USAF", "WBAN", "STATION NAME", "CTRY", "ST", "CALL", "LAT", "LON", "ELEV(M)", "BEGIN", "END"), flush = TRUE)
+    noaa.sites <- read.fwf(tf, skip = 22, header = F,
+        widths = c(6,-1,5,-1,30, 5, 3, 6, 8, 9, 8, 9, 8), comment.char = "",
+        col.names = c("USAF", "WBAN", "STATION NAME", "CTRY", "ST", "CALL", "LAT", "LON", "ELEV(M)", "BEGIN", "END"),
+        flush = TRUE, colClasses=c('USAF'='character', 'WBAN'='character'))
     noaa.sites <- na.omit(noaa.sites)
     noaa.sites <- noaa.sites %>%
         mutate(LAT = as.numeric(as.character(LAT))) %>%
