@@ -10,19 +10,26 @@ FindandCollect_airpres = function(lat, long, start_datetime, end_datetime) {
     tf = tempfile()
     download.file("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-history.txt",tf,mode="wb")
     noaa.sites <- read.fwf(tf, skip = 22, header = F,
-        widths = c(6,-1,5,-1,30, 5, 3, 6, 8, 9, 8, 9, 8), comment.char = "",
-        col.names = c("USAF", "WBAN", "STATION NAME", "CTRY", "ST", "CALL", "LAT", "LON", "ELEV(M)", "BEGIN", "END"),
+        # widths = c(6,-1,5,-1,30, 5, 3, 6, 8, 9, 8, 9, 8), comment.char = "",
+        widths = c(6,-1,5,-45, 8, 9,-8, 9, 8), comment.char = "",
+        col.names = c("USAF", "WBAN", "LAT", "LON", "BEGIN", "END"),
+        # col.names = c("USAF", "WBAN", "STATION NAME", "CTRY", "ST", "CALL", "LAT", "LON", "ELEV(M)", "BEGIN", "END"),
         flush = TRUE, colClasses=c('USAF'='character', 'WBAN'='character'))
     noaa.sites <- na.omit(noaa.sites)
     noaa.sites <- noaa.sites %>%
         mutate(LAT = as.numeric(as.character(LAT))) %>%
         mutate(LON = as.numeric(as.character(LON))) %>%
         filter(LAT < (lat + 5) & LAT > (lat - 5) & LON < (long + 5) & LON > (long - 5))
-    pt1 <- cbind(rep(long, length.out = length(noaa.sites$LAT)), rep(lat, length.out = length(noaa.sites$LAT)))
+    # qq = noaa.sites[13750:13754,]
+    pt1 <- cbind(rep(long, length.out = length(noaa.sites$LAT)),
+        rep(lat, length.out = length(noaa.sites$LAT)))
     pt2 <- cbind(noaa.sites$LON, noaa.sites$LAT)
-    dist <- diag(geosphere::distm(pt1, pt2, fun = distHaversine))/1000
+    dist <- diag(geosphere::distm(pt1, pt2, fun=geosphere::distHaversine))/1000
     noaa.sites$dist <- dist
-    tmp <- which((as.numeric(substr(noaa.sites$END,1,4)) >= as.numeric(substr(end_datetime, 1, 4))) & as.numeric(substr(noaa.sites$BEGIN,1,4)) <= as.numeric(substr(start_datetime, 1, 4)))
+    tmp <- which((as.numeric(substr(noaa.sites$END,1,4)) >=
+        as.numeric(substr(end_datetime, 1, 4))) &
+        as.numeric(substr(noaa.sites$BEGIN,1,4)) <=
+        as.numeric(substr(start_datetime, 1, 4)))
     noaa.sites <- noaa.sites[tmp,]
     noaa.sites <- noaa.sites[with(noaa.sites, order(dist)),]
 
@@ -76,12 +83,6 @@ FindandCollect_airpres = function(lat, long, start_datetime, end_datetime) {
 }
 
 retrieve_air_pressure = function(md, dd){
-
-    # md2 <<- md
-    # dd2 <<- dd
-    # stop('a')
-    # md = md2
-    # dd = dd2
 
     lat = md$lat
     long = md$lon
