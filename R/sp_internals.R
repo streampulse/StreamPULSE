@@ -380,6 +380,7 @@ extract_model_details = function(fit, preds, specs){
 
     pearson = cor(fit@fit$daily$ER_mean, fit@fit$daily$K600_daily_mean,
         use='na.or.complete')
+    if(is.na(pearson)) pearson = 1
 
     coverage = as.numeric(as.Date(preds$date[nrow(preds)]) -
             as.Date(preds$date[1]))
