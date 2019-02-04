@@ -26,5 +26,5 @@ install_github('streampulse/StreamPULSE')
 
 ---
 ### **Example**
-See StreamPULSE's [https://data.streampulse.org/model](model page)
+See StreamPULSE's [https://data.streampulse.org/model] (model page)
 for an example of how to use this package.
