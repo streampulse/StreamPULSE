@@ -112,6 +112,7 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
     err_proc_acor=FALSE, err_proc_iid=TRUE, ode_method='trapezoid',
     deficit_src='DO_mod'){
 
+    is_powell = grepl('nwis-[0-9]+', d$specs$site)
     fitdata = d$data
 
     # check class of fitdata to determine which model to fit
@@ -247,96 +248,105 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
     }
 
     #assemble retrieval API call for the current best model's details
-    cat(paste0('Checking StreamPULSE database for model results to\n\t',
-        'compare with the model you just fit.\n'))
+    if(! is_powell){
 
-    u = paste0("https://data.streampulse.org/api/model_details_download?region=",
-    # u = paste0("localhost:5000/api/model_details_download?region=",
-        d$specs$region, "&site=", d$specs$site, "&year=", mod_startyr)
+        cat(paste0('Checking StreamPULSE database for model results to\n\t',
+            'compare with the model you just fit.\n'))
 
-    #retrieve details for the current best model
-    if(d$specs$token == 'none'){
-        # r = httr::GET(u)
-        tryCatch(R.utils::withTimeout(r <- httr::GET(u),
-            timeout=12, onTimeout='error'),
-            error=function(e){
-                warning(paste('Could not reach StreamPULSE.',
-                    'Check your internet connection.'), call.=FALSE)
-                })
-    } else {
-        # r = httr::GET(u, httr::add_headers(Token=d$specs$token))
-        tryCatch(R.utils::withTimeout(r <- httr::GET(u,
-            httr::add_headers(Token=d$specs$token)), timeout=12,
-            onTimeout='error'),
-            error=function(e){
-                warning(paste('Could not reach StreamPULSE.',
-                    'Check your internet connection.'), call.=FALSE)
-                })
-    }
+        u = paste0("https://data.streampulse.org/api/model_details_download?region=",
+        # u = paste0("localhost:5000/api/model_details_download?region=",
+            d$specs$region, "&site=", d$specs$site, "&year=", mod_startyr)
 
-    if(exists('r')){
-        json = httr::content(r, as="text", encoding="UTF-8")
-        modspec = try(jsonlite::fromJSON(json), silent=TRUE)
-    }
+        #retrieve details for the current best model
+        if(d$specs$token == 'none'){
+            # r = httr::GET(u)
+            tryCatch(R.utils::withTimeout(r <- httr::GET(u),
+                timeout=12, onTimeout='error'),
+                error=function(e){
+                    warning(paste('Could not reach StreamPULSE.',
+                        'Check your internet connection.'), call.=FALSE)
+                    })
+        } else {
+            # r = httr::GET(u, httr::add_headers(Token=d$specs$token))
+            tryCatch(R.utils::withTimeout(r <- httr::GET(u,
+                httr::add_headers(Token=d$specs$token)), timeout=12,
+                onTimeout='error'),
+                error=function(e){
+                    warning(paste('Could not reach StreamPULSE.',
+                        'Check your internet connection.'), call.=FALSE)
+                    })
+        }
 
-    #check for errors
-    if(!exists('modspec') || class(modspec) == 'try-error'){
-        cat(paste0('Failed to retrieve data from StreamPULSE.\n\t',
-            'Returning your model fit and predictions.\n'))
-        output$details$current_best = NULL
-        return(output)
-    }
-    # if(length(modspec) == 1 && ! is.null(modspec$error)){
-    #     return(output) #this line should never run; just here for later
-    # }
+        if(exists('r')){
+            json = httr::content(r, as="text", encoding="UTF-8")
+            modspec = try(jsonlite::fromJSON(json), silent=TRUE)
+        }
 
-    #if no model data on server, push this model up and return
-    if(length(modspec$specs) == 0){
-        cat(paste0("No model fits detected for this site and calendar year",
-            ",\n\tso yours is the best fit by default!\n\t",
-            "Pushing your results to the StreamPULSE database\n\t",
-            "and returning model fit and predictions.\n"))
-        push_model_to_server(output=output, deets=deets)
-        output$details$current_best = NULL
-        return(output)
-    }
+        #check for errors
+        if(!exists('modspec') || class(modspec) == 'try-error'){
+            cat(paste0('Failed to retrieve data from StreamPULSE.\n\t',
+                'Returning your model fit and predictions.\n'))
+            output$details$current_best = NULL
+            return(output)
+        }
+        # if(length(modspec) == 1 && ! is.null(modspec$error)){
+        #     return(output) #this line should never run; just here for later
+        # }
 
-    #compare this model to the current best
-    this_model_pen = get_model_penalty(deets)
-    best_model_pen = get_model_penalty(modspec$specs)
+        #if no model data on server, push this model up and return
+        if(length(modspec$specs) == 0){
+            cat(paste0("No model fits detected for this site and calendar year",
+                ",\n\tso yours is the best fit by default!\n\t",
+                "Pushing your results to the StreamPULSE database\n\t",
+                "and returning model fit and predictions.\n"))
+            push_model_to_server(output=output, deets=deets)
+            output$details$current_best = NULL
+            return(output)
+        }
 
-    mods_equal = this_model_pen == best_model_pen
-    pen_dif = best_model_pen - this_model_pen
-    coverage_dif = deets$coverage - modspec$specs$coverage
+        #compare this model to the current best
+        this_model_pen = get_model_penalty(deets)
+        best_model_pen = get_model_penalty(modspec$specs)
 
-    #if mod penalties equal, compare coverage. if better, push. return.
-    if(mods_equal){
-        if(coverage_dif > 0){ #this model has better coverage
+        mods_equal = this_model_pen == best_model_pen
+        pen_dif = best_model_pen - this_model_pen
+        coverage_dif = deets$coverage - modspec$specs$coverage
+
+        #if mod penalties equal, compare coverage. if better, push. return.
+        if(mods_equal){
+            if(coverage_dif > 0){ #this model has better coverage
+                cat(paste0("Your model outperformed the best one on file!\n\t",
+                    "Pushing your results to the StreamPULSE database\n\t",
+                    "and returning your model fit and predictions.\n"))
+                push_model_to_server(output=output, deets=deets)
+            }
+
+            output$details$current_best = NULL
+            return(output)
+        }
+
+        #COVERAGE SHOULD NOT BE BASED SOLELY ON START AND END DATE, BUT ALSO NA!
+
+        #if penalties differ, evaluate penaty and coverage differences
+        accept = compare_models(pen_dif, coverage_dif)
+
+        if(accept){
             cat(paste0("Your model outperformed the best one on file!\n\t",
                 "Pushing your results to the StreamPULSE database\n\t",
                 "and returning your model fit and predictions.\n"))
             push_model_to_server(output=output, deets=deets)
+            output$details$current_best = NULL
+            return(output)
         }
 
-        output$details$current_best = NULL
-        return(output)
+        cat(paste('Done. Returning your model fit and predictions.\n'))
+
+    } else {
+        cat(paste('Done. Returning your model fit and predictions.\n'))
+        cat(paste('\tNOTE: Powell Center models on the StreamPULSE server',
+            'are immutable.'))
     }
 
-    #COVERAGE SHOULD NOT BE BASED SOLELY ON START AND END DATE, BUT ALSO NA!
-
-    #if penalties differ, evaluate penaty and coverage differences
-    accept = compare_models(pen_dif, coverage_dif)
-
-    if(accept){
-        cat(paste0("Your model outperformed the best one on file!\n\t",
-            "Pushing your results to the StreamPULSE database\n\t",
-            "and returning your model fit and predictions.\n"))
-        push_model_to_server(output=output, deets=deets)
-        output$details$current_best = NULL
-        return(output)
-    }
-
-    cat(paste('Done. Returning your model fit and predictions.\n'))
     output$details$current_best = NULL
     return(output)
 

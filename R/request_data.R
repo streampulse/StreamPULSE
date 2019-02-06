@@ -88,7 +88,7 @@ request_data = function(sitecode, startdate=NULL, enddate=NULL, variables=NULL,
 
     #assemble url based on user input
     u = paste0("https://data.streampulse.org/api?sitecode=",sitecode)
-    # u = paste0("localhost:5000/api?sitecode=", sitecode)
+    #u = paste0("localhost:5000/api?sitecode=", sitecode)
     if(!is.null(startdate)) u = paste0(u, "&startdate=", startdate)
     if(!is.null(enddate)) u = paste0(u, "&enddate=", enddate)
     u = paste0(u, "&variables=", paste0(variables, collapse=","))

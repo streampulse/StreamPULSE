@@ -77,7 +77,7 @@ request_results = function(sitecode, year, token=NULL){
     #assemble api request for model output based on user input
     u = paste0("https://data.streampulse.org/request_results?sitecode=",
         sitecode, "&year=", year)
-    # u = paste0("localhost:5000/request_results?sitecode=", sitecode,
+    #u = paste0("localhost:5000/request_results?sitecode=", sitecode,
     #     "&year=", year)
     cat(paste0('\nAPI call for model output:\n', u, '\n'))
 
@@ -107,8 +107,8 @@ request_results = function(sitecode, year, token=NULL){
     #assemble api request for model predictions based on same input
     u = paste0("https://data.streampulse.org/request_predictions?sitecode=",
         sitecode, "&year=", year)
-    # u = paste0("localhost:5000/request_predictions?sitecode=", sitecode,
-    #     "&year=", year)
+    #u = paste0("localhost:5000/request_predictions?sitecode=", sitecode,
+    #    "&year=", year)
     cat(paste0('\nAPI call for model predictions:\n', u, '\n'))
 
     #retrieve raw rds binary from response
@@ -133,6 +133,15 @@ request_results = function(sitecode, year, token=NULL){
     writeBin(raw, con) #write raw rds binary to temp file
     close(con)
     predictions = readRDS(tmp_filename)
+
+    #powell outputs have different list and file structure.
+    #reformat them to match SP outputs here.
+    # sitenm = predictions$predictions$site_name[1]
+    # if(grepl('nwis-[0-9]+', sitenm)){
+    if(length(names(predictions)) == 4){
+        predictions = predictions$predictions
+        mod_results = mod_results[c('fit', 'data', 'data_daily')]
+    }
 
     out = list('model_results'=mod_results, 'predictions'=predictions)
     return(out)

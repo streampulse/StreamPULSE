@@ -68,7 +68,7 @@ query_available_results = function(region=NULL, site=NULL, year=NULL){
     }
 
     #assemble url based on user input
-    # u = "localhost:5000/query_available_results?"
+    #u = "localhost:5000/query_available_results?"
     u = "https://data.streampulse.org/query_available_results?"
     if(!is.null(region)) u = paste0(u, "&region=", region)
     if(!is.null(site)) u = paste0(u, "&site=", site)
