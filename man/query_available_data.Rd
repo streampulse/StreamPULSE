@@ -5,7 +5,7 @@
 \title{View sites, dates, and variables available in the StreamPULSE database}
 \usage{
 query_available_data(region = NULL, site = NULL, startdate = NULL,
-  enddate = NULL, variable = NULL, powell = FALSE)
+  enddate = NULL, variable = NULL)
 }
 \arguments{
 \item{region}{string representing region. Must be a StreamPULSE region
@@ -27,12 +27,6 @@ See details for a caveat.}
 
 \item{variable}{string representing a StreamPULSE variable name, such as
 'DO_mgL'. Set this argument to 'all' for a list of all variable names.}
-
-\item{powell}{logical; set to TRUE to query only data that are part of
-the Powell Center metabolism synthesis. Set to FALSE (default) to
-query only data from StreamPULSE and NEON. This parameter affects
-queries that only include startDate, endDate, and variable. If your
-query is of any other form, this parameter will be ignored.}
 }
 \value{
 returns a list containing one or more data frames containing

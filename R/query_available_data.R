@@ -28,11 +28,6 @@
 #'   See details for a caveat.
 #' @param variable string representing a StreamPULSE variable name, such as
 #'   'DO_mgL'. Set this argument to 'all' for a list of all variable names.
-#' @param powell logical; set to TRUE to query only data that are part of
-#'   the Powell Center metabolism synthesis. Set to FALSE (default) to
-#'   query only data from StreamPULSE and NEON. This parameter affects
-#'   queries that only include startDate, endDate, and variable. If your
-#'   query is of any other form, this parameter will be ignored.
 #' @return returns a list containing one or more data frames containing
 #'   site, variable, or time data. Which of these data frames is/are returned
 #'   depends on which of the input parameters are specified. See examples
@@ -69,7 +64,7 @@
 #' query_available_data(startdate='2017-01-08', enddate='2017-04-09',
 #'     variable='DO_mgL')
 query_available_data = function(region=NULL, site=NULL, startdate=NULL,
-    enddate=NULL, variable=NULL, powell=FALSE){
+    enddate=NULL, variable=NULL){
 
     #basic checks (more in Flask code)
     if(length(region) > 1 ||
@@ -133,32 +128,28 @@ query_available_data = function(region=NULL, site=NULL, startdate=NULL,
         stop("Received arguments for dates, region+site, and variable.\n\t",
             "Omit at least one of these.", call.=FALSE)
     }
-    if(! is.null(startdate) && ! is.null(variable) && is.null(region) &&
-        ! is.logical(powell)){
-        stop("Argument to parameter 'powell' must be logical.")
-    }
-    if(! is.null(startdate) && ! is.null(variable) && is.null(region) &&
-        ! powell){
-        cat(paste("NOTE: set powell=TRUE to query Powell Center metabolism",
-            "\n\tsynthesis data. If you don't see this message, this note does",
-            "\n\tnot apply. It's only necessary here because this particular",
-            "\n\tquery takes ages. It would take ages^2 if StreamPULSE and Powell",
-            "\n\tdata were queried simultaneously.\n"))
+    if(! is.null(startdate) && ! is.null(variable) && is.null(region)){
+        cat(paste0("NOTE: because this query takes forever,\n\tPowell Center",
+            " sites are not incuded in the output. All Powell Center\n\t",
+            "sites include DO, DOsat, depth, water temp, discharge,\n\t",
+            "and light for each day of available data, and can be\n\t",
+            "identified by their site names, which take the form\n\t",
+            "'nwis-<numeric string>'.\n"))
     }
 
     #assemble url based on user input
-    #u = "localhost:5000/query_available_data?"
+    # u = "localhost:5000/query_available_data?"
     u = "https://data.streampulse.org/query_available_data?"
     if(!is.null(region)) u = paste0(u, "&region=", region)
     if(!is.null(site)) u = paste0(u, "&site=", site)
     if(!is.null(startdate)) u = paste0(u, "&startdate=", startdate)
     if(!is.null(enddate)) u = paste0(u, "&enddate=", enddate)
     if(!is.null(variable)) u = paste0(u, "&variable=", variable)
-    u = paste0(u, "&powell=", powell)
+    # u = paste0(u, "&powell=", powell)
 
     cat(paste0('API call: ', u, '\n\n'))
     if(is.null(region) && ! is.null(variable) && ! is.null(startdate)){
-        message(paste('NOTE: This particular request takes the server a while,',
+        message(paste('NOTE: This particular query takes the server a long time,',
             '\n\teven if you abort it from R.'))
     }
 
