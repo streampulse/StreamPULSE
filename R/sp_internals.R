@@ -519,3 +519,14 @@ compare_models = function(pen_dif, coverage_dif){
     return(accept_new_mod)
 }
 
+#requires that input be 'y' or 'n'
+get_user_input = function(prompt){
+    user_input = readline(prompt)
+    if(user_input == 'y'){
+        out = TRUE
+    } else if(user_input == 'n'){
+        out = FALSE
+    } else {
+        get_user_input('response must be y for "yes" or n for "no" > ')
+    }
+}
