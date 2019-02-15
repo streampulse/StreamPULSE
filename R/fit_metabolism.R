@@ -179,7 +179,6 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
 
         #fit model
         model_fit = streamMetabolizer::metab(specs=modspecs, data=fitdata)
-        # return(model_fit)
 
     }else if(model=="BASE"){
         tmp = tempdir() # the temp dir for the data and model
@@ -229,9 +228,6 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
         predictions = streamMetabolizer::predict_metab(model_fit)
         output = list(predictions=predictions, fit=model_fit)
     }
-
-    # ppp <<- predictions
-    # fff <<- model_fit
 
     #extract data related to current model run and performance
     deets = extract_model_details(model_fit, predictions, d$specs)
@@ -332,9 +328,9 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
                     push_model_to_server(output=output, deets=deets)
                     cat(paste0("Thank you! Returning model fit and predictions.\n"))
                 }
-                cat(paste0("Returning model fit and predictions.\n"))
             }
 
+            cat(paste0("Returning model fit and predictions.\n"))
             output$details$current_best = NULL
             return(output)
         }
@@ -346,19 +342,26 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
 
         if(accept){
             cat(paste0("Your model outperformed the best one on file!\n\t",
-                "Pushing your results to the StreamPULSE database\n\t",
-                "and returning your model fit and predictions.\n"))
-            push_model_to_server(output=output, deets=deets)
+                "May we store your results on the StreamPULSE data portal?\n"))
+
+            user_response = get_user_input('y/n > ')
+            if(user_response){
+                push_model_to_server(output=output, deets=deets)
+                cat(paste0("Thank you! Returning model fit and predictions.\n"))
+            }
+
+            cat(paste0("Returning model fit and predictions.\n"))
             output$details$current_best = NULL
             return(output)
         }
 
-        cat(paste('Done. Returning your model fit and predictions.\n'))
+        #if here, model did did not outperform current best on server
+        cat(paste0("Returning model fit and predictions.\n"))
 
     } else {
         cat(paste('Done. Returning your model fit and predictions.\n'))
-        cat(paste('\tNOTE: Powell Center models on the StreamPULSE server',
-            'are immutable.'))
+        cat(paste0('\tNOTE: User-generated models based on Powell Center data\n\t',
+            'are not eligible for inclusion on the StreamPULSE server\n'))
     }
 
     output$details$current_best = NULL
