@@ -260,12 +260,12 @@ gap_fill = function(df, maxspan_days=5, knn=3, sint, algorithm, maxhours, ...){
     # check if all but one column is numeric
     if( !(length(which(sapply(df, function(x) base::inherits(x, "numeric")))) ==
             ncol(df)-1) ){
-        stop("All but one column in df must be numeric.", call.=FALSE)
+        stop("All but one input column must be numeric.", call.=FALSE)
     }
     # check if a posix column exists
     wposix = which(sapply(df, function(x) base::inherits(x, "POSIXct")))
     if( !(length(wposix)==1) ){
-        stop("Need at least one column in df with POSIXct datetime.",
+        stop("Need at least one column with POSIXct datetimes.",
             call.=FALSE)
     }
 

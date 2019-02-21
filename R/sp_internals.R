@@ -7,6 +7,8 @@
 #' @keywords internal
 #'
 FindandCollect_airpres = function(lat, long, start_datetime, end_datetime) {
+
+    #get df of all available air pressure stations
     tf = tempfile()
     download.file("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-history.txt",tf,mode="wb")
     noaa.sites <- read.fwf(tf, skip = 22, header = F,
@@ -16,11 +18,14 @@ FindandCollect_airpres = function(lat, long, start_datetime, end_datetime) {
         # col.names = c("USAF", "WBAN", "STATION NAME", "CTRY", "ST", "CALL", "LAT", "LON", "ELEV(M)", "BEGIN", "END"),
         flush = TRUE, colClasses=c('USAF'='character', 'WBAN'='character'))
     noaa.sites <- na.omit(noaa.sites)
+
+    #narrow them down to those within 5 lats/longs
     noaa.sites <- noaa.sites %>%
         mutate(LAT = as.numeric(as.character(LAT))) %>%
         mutate(LON = as.numeric(as.character(LON))) %>%
         filter(LAT < (lat + 5) & LAT > (lat - 5) & LON < (long + 5) & LON > (long - 5))
-    # qq = noaa.sites[13750:13754,]
+
+    #filter by coverage, order by distance
     pt1 <- cbind(rep(long, length.out = length(noaa.sites$LAT)),
         rep(lat, length.out = length(noaa.sites$LAT)))
     pt2 <- cbind(noaa.sites$LON, noaa.sites$LAT)
@@ -46,19 +51,27 @@ FindandCollect_airpres = function(lat, long, start_datetime, end_datetime) {
         y <- as.data.frame(matrix(NA, nrow = 1, ncol = 12))
         for(j in 1:length(yrs)){
             tf = tempfile()
-            download.file(paste0("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-lite/",
-                yrs[j],"/",USAF,"-",WBAN,"-",yrs[j],".gz"),tf,mode="wb")
+            res = tryCatch(suppressWarnings(download.file(paste0("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-lite/",
+                yrs[j], "/", USAF, "-", WBAN, "-", yrs[j], ".gz"), tf, mode="wb")),
+                error=function(e){
+                    # message('NCDC download failed; trying next closest station')
+                    return('download failed')
+                })
+            if(exists('res') && res == 'download failed'){
+                break #try next station
+            }
+
             x = read.table(tf)
             x[x==-9999] = NA
             if(length(which(!is.na(x$V7))) >= 0.9 * length(x$V7)) {
                 available[j] <- TRUE
                 y <- rbind(x,y)
             }else {
-                break
+                break #too many NAs, move to next station
             }
         }
         if(length(yrs) == length(which(available))){
-            break
+            break #got one
         }
     }
     y <- y[!is.na(y$V1),]
