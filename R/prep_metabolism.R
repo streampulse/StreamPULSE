@@ -138,6 +138,10 @@
 #'   better off with TRUE, assuming you have discharge data to estimate areal
 #'   depth
 #'   from, or a rating curve by which to generate discharge data.
+#' @param estimate_PAR logical; should Photosynthetically Active Radiation (PAR)
+#'   be estimated from geographic coordinates and time? Only use light data if
+#'   you're confident that your light sensors accurately represent light reaching
+#'   the upstream area defined by O2 turnover distance.
 #' @param ... additional arguments passed to \code{imputeTS::na.seasplit}.
 #' @return returns an S4 object containing a \code{data.frame} formatted for
 #'   the model specified by \code{model} and \code{type}.
@@ -160,7 +164,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     fillgaps='interpolation', maxhours=3,
     zq_curve=list(sensor_height=NULL, Z=NULL, Q=NULL, a=NULL, b=NULL,
         fit='power', ignore_oob_Z=TRUE, plot=TRUE),
-    estimate_areal_depth=FALSE, ...){
+    estimate_areal_depth=FALSE, estimate_PAR=TRUE, ...){
     # zq_curve=list(Z=NULL, Q=NULL, a=NULL, b=NULL), ...){
 
     # type is one of "bayes" or "mle"
@@ -352,10 +356,8 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     if(using_level){
         dd$Depth_m = dd$Level_m
         vd = c(vd, 'Depth_m')
-        warning(paste0('Using level data in place of missing depth data.',
-            '\n\tThis will produce inaccurate model results.\n\t',
-            'See estimate_areal_depth parameter for another possibility.'),
-            call.=FALSE)
+        warning(paste0('Using supplied level data in place of missing depth data.',
+            '\n\tDepth would be more accurate!'), call.=FALSE)
     }
     # if('Level_m' %in% vd & 'Depth_m' %in% vd){ #use col with more data if both
     #     na_cnt = sapply(dd[,c('Level_m','Depth_m')], function(x) sum(is.na(x)))
@@ -482,17 +484,21 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     if(zq_supplied){
         cat(paste0('Modeling discharge from rating curve.\n\tCurve will be ',
             'generated from supplied Z and Q samples.\n'))
-        dd$Discharge_m3s = estimate_discharge(Z=Z, Q=Q, sh=sensor_height,
+        depth_disch = estimate_discharge(Z=Z, Q=Q, sh=sensor_height,
             dd=dd, fit=fit, ignore_oob_Z=ignore_oob_Z, plot=zqplot)
-        vd = c(vd, 'Discharge_m3s')
+        dd$Discharge_m3s = depth_disch$discharge
+        dd$Depth_m = depth_disch$depth
+        vd = c(vd, 'Discharge_m3s', 'Depth_m')
     } else {
         if(ab_supplied){
             cat(paste0('Modeling discharge from rating curve determined by',
                 '\n\tsupplied a and b parameters.\n'))
-            dd$Discharge_m3s = estimate_discharge(a=a, b=b,
+            depth_disch = estimate_discharge(a=a, b=b,
                 sh=sensor_height, dd=dd, fit=fit, ignore_oob_Z=ignore_oob_Z,
                 plot=zqplot)
-            vd = c(vd, 'Discharge_m3s')
+            dd$Discharge_m3s = depth_disch$discharge
+            dd$Depth_m = depth_disch$depth
+            vd = c(vd, 'Discharge_m3s', 'Depth_m')
         }
         # if(ab_supplied & missing_depth){
         #     cat(paste0('Modeling discharge from rating curve determined by',
@@ -542,11 +548,18 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
             longitude=md$lon[1], time.type="apparent solar"))
     dd$light = suppressWarnings(streamMetabolizer::calc_solar_insolation(
         app.solar.time=apparentsolartime, latitude=md$lat[1], format="degrees"))
-    if("Light_PAR" %in% vd){ # fill in with observations if available
-        dd$light[!is.na(dd$Light_PAR)] = dd$Light_PAR[!is.na(dd$Light_PAR)]
-    }else{
-        cat("Estimating PAR based on latitude and time.\n")
+
+    if("Light_PAR" %in% vd && ! estimate_PAR){
+        message(paste0("Using supplied light data. Unless you're quite ",
+            "confident in these data,\n\tit may be preferable to set ",
+            "estimate_PAR=TRUE."))
+        dd$light[! is.na(dd$Light_PAR)] = dd$Light_PAR[! is.na(dd$Light_PAR)]
+    } else {
+        cat("Estimating PAR from latitude and time.\n")
     }
+
+    dd$Light_PAR = NULL
+    dd$Light_lux = NULL
 
     # impute missing data. code found in gapfill_functions.R (maxspan_days deprecated)
     dd = select(dd, -c(region, site, DateTime_UTC))
@@ -647,7 +660,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
 
     # Structure data, add class for model name
     if(model=="BASE"){ # rename variables for BASE
-        fitdata = dd %>% select_(.dots=model_variables) %>%
+        fitdata = dd %>% select(.dots=model_variables) %>%
             mutate(Date=as.Date(solar.time),
                 Time=strftime(solar.time, format="%H:%M:%S"), salinity=0) %>%
             rename(I=light, tempC=temp.water, DO.meas=DO.obs) %>%
@@ -656,9 +669,9 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         outdata = as(fitdata, "BASE")
     }else if(model=="streamMetabolizer"){
         if('discharge' %in% colnames(dd)){
-            fitdata = select_(dd, .dots=c(model_variables, 'discharge'))
+            fitdata = select(dd, .dots=c(model_variables, 'discharge'))
         } else {
-            fitdata = select_(dd, .dots=model_variables)
+            fitdata = select(dd, .dots=model_variables)
         }
         # streamMetabolizer = create_sm_class()
         outdata = as(fitdata, "streamMetabolizer")

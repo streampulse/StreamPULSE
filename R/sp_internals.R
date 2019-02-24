@@ -323,8 +323,15 @@ estimate_discharge = function(Z=NULL, Q=NULL, a=NULL, b=NULL,
             depth[depth > maxZ] = NA
             message(paste0(prop_Z_oob * 100, '% of sensor ',
                 tolower(dep_or_lvl), ' values ',
-                'exceeded Z in the rating curve.\n\tThese have been replaced',
-                ' with NA because ignore_oob_Z is set to TRUE.'))
+                'exceeded Z in the rating curve.'))
+
+            if(prop_Z_oob == 0){
+                message('\tNice!')
+            } else {
+                message('\tThese have been replaced',
+                ' with NA because ignore_oob_Z is set to TRUE.')
+            }
+
         } else {
             if(maxD > maxZ){
                 warning(paste0('Max observed ', tolower(dep_or_lvl), ' = ',
@@ -357,7 +364,7 @@ estimate_discharge = function(Z=NULL, Q=NULL, a=NULL, b=NULL,
     }
     suppressWarnings(par(defpar))
 
-    return(discharge)
+    return(list('discharge'=discharge, 'depth'=depth))
 }
 
 create_sm_class = function(){
