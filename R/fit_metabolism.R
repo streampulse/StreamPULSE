@@ -160,25 +160,37 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
             err_obs_iid=err_obs_iid, err_proc_acor=err_proc_acor,
             err_proc_iid=err_proc_iid,
             ode_method=ode_method, deficit_src=deficit_src, engine=engine)
-        # modname = mm_name(type=model_type, pool_K600=pool_K600,
-        #     err_obs_iid=TRUE, err_proc_acor=FALSE, err_proc_iid=proc_err,
-        #     ode_method = "trapezoid", deficit_src="DO_mod", engine=engine)
         modspecs = streamMetabolizer::specs(modname)
 
-        # fitdata2 <<- fitdata
-        # stop('a')
-        # fitdata = fitdata2
-        #get average log daily discharge and use it to parameterize k v. Q curve
         if(engine == 'stan' && pool_K600 == 'binned'){
+
+            #get average log daily discharge; set K v. Q node centers
+            n_KQ_nodes = 7 #should be 7 <= x <= 17; increase with discharge range
             addis = tapply(log(fitdata$discharge),
                 substr(fitdata$solar.time,1,10), mean)
-            # sum(is.infinite(log(fitdata$discharge))
             modspecs$K600_lnQ_nodes_centers = seq(from=min(addis, na.rm=TRUE),
-                to=max(addis, na.rm=TRUE), length.out=7)
+                to=max(addis, na.rm=TRUE), length.out=n_KQ_nodes)
+
+            #set mean log K for K v. Q relationship (from empirical relationship)
+            av_veloc = 0.27
+            av_slope = 0.005
+            av_depth = 1.95
+            av_disch = 1.94
+            logK = log(5.62) + 0.504*log(av_veloc * av_slope) -
+                0.575*log(av_depth) - 0.0892*log(av_disch)
+            modspecs$K600_lnQ_nodes_meanlog = rep(logK, n_KQ_nodes)
+
+            #set sd for K prior (0.1 if you've measured K, 0.7 if using above
+            #equation, 1 if agnostic)
+            modspecs$K600_lnQ_nodes_sdlog = rep(0.8, n_KQ_nodes)
+
+            #set daily bounce (how much K can vary by day; 0.7 <= x <= 2.4)
+            modspecs$K600_daily_sigma_sigma = 1.5
         }
 
         #fit model
         model_fit = streamMetabolizer::metab(specs=modspecs, data=fitdata)
+        # saveRDS(model_fit, '~/Desktop/NHC_fit.rds')
 
     }else if(model=="BASE"){
         tmp = tempdir() # the temp dir for the data and model
@@ -299,8 +311,8 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
 
             user_response = get_user_input('y/n > ')
             if(user_response){
+                cat('Thank you. Just a moment.\n')
                 push_model_to_server(output=output, deets=deets)
-                cat(paste0("Thank you! Returning model fit and predictions.\n"))
             }
             cat(paste0("Returning model fit and predictions.\n"))
             output$details$current_best = NULL
@@ -325,8 +337,8 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
 
                 user_response = get_user_input('y/n > ')
                 if(user_response){
+                    cat('Thank you. Just a moment.\n')
                     push_model_to_server(output=output, deets=deets)
-                    cat(paste0("Thank you! Returning model fit and predictions.\n"))
                 }
             }
 
@@ -346,8 +358,8 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
 
             user_response = get_user_input('y/n > ')
             if(user_response){
+                cat('Thank you. Just a moment.\n')
                 push_model_to_server(output=output, deets=deets)
-                cat(paste0("Thank you! Returning model fit and predictions.\n"))
             }
 
             cat(paste0("Returning model fit and predictions.\n"))

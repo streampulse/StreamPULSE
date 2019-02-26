@@ -660,7 +660,8 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
 
     # Structure data, add class for model name
     if(model=="BASE"){ # rename variables for BASE
-        fitdata = dd %>% select(.dots=model_variables) %>%
+        # fitdata = dd %>% select_(.dots=model_variables) %>%
+        fitdata = dd %>% select(model_variables) %>%
             mutate(Date=as.Date(solar.time),
                 Time=strftime(solar.time, format="%H:%M:%S"), salinity=0) %>%
             rename(I=light, tempC=temp.water, DO.meas=DO.obs) %>%
@@ -669,9 +670,10 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         outdata = as(fitdata, "BASE")
     }else if(model=="streamMetabolizer"){
         if('discharge' %in% colnames(dd)){
-            fitdata = select(dd, .dots=c(model_variables, 'discharge'))
+            # fitdata = select_(dd, .dots=c(model_variables, 'discharge'))
+            fitdata = select(dd, c(model_variables, 'discharge'))
         } else {
-            fitdata = select(dd, .dots=model_variables)
+            fitdata = select(dd, model_variables)
         }
         # streamMetabolizer = create_sm_class()
         outdata = as(fitdata, "streamMetabolizer")
