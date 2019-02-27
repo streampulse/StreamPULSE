@@ -9,7 +9,7 @@ prep_metabolism(d, model = "streamMetabolizer", type = "bayes",
   fillgaps = "interpolation", maxhours = 3,
   zq_curve = list(sensor_height = NULL, Z = NULL, Q = NULL, a = NULL, b =
   NULL, fit = "power", ignore_oob_Z = TRUE, plot = TRUE),
-  estimate_areal_depth = FALSE, ...)
+  estimate_areal_depth = FALSE, estimate_PAR = TRUE, ...)
 }
 \arguments{
 \item{d}{the output of \code{request_data},
@@ -76,6 +76,11 @@ level-at-sensor, you might be
 better off with TRUE, assuming you have discharge data to estimate areal
 depth
 from, or a rating curve by which to generate discharge data.}
+
+\item{estimate_PAR}{logical; should Photosynthetically Active Radiation (PAR)
+be estimated from geographic coordinates and time? Only use light data if
+you're confident that your light sensors accurately represent light reaching
+the upstream area defined by O2 turnover distance.}
 
 \item{...}{additional arguments passed to \code{imputeTS::na.seasplit}.}
 }
