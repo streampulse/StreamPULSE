@@ -171,21 +171,21 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
             modspecs$K600_lnQ_nodes_centers = seq(from=min(addis, na.rm=TRUE),
                 to=max(addis, na.rm=TRUE), length.out=n_KQ_nodes)
 
-            #set mean log K for K v. Q relationship (from empirical relationship)
-            av_veloc = 0.27
-            av_slope = 0.005
-            av_depth = 1.95
-            av_disch = 1.94
-            logK = log(5.62) + 0.504*log(av_veloc * av_slope) -
-                0.575*log(av_depth) - 0.0892*log(av_disch)
-            modspecs$K600_lnQ_nodes_meanlog = rep(logK, n_KQ_nodes)
-
-            #set sd for K prior (0.1 if you've measured K, 0.7 if using above
-            #equation, 1 if agnostic)
-            modspecs$K600_lnQ_nodes_sdlog = rep(0.8, n_KQ_nodes)
-
-            #set daily bounce (how much K can vary by day; 0.7 <= x <= 2.4)
-            modspecs$K600_daily_sigma_sigma = 1.5
+            # #set mean log K for K v. Q relationship (from empirical relationship)
+            # av_veloc = 0.27
+            # av_slope = 0.005
+            # av_depth = 1.95
+            # av_disch = 1.94
+            # logK = log(5.62) + 0.504*log(av_veloc * av_slope) -
+            #     0.575*log(av_depth) - 0.0892*log(av_disch)
+            # modspecs$K600_lnQ_nodes_meanlog = rep(logK, n_KQ_nodes)
+            #
+            # #set sd for K prior (0.1 if you've measured K, 0.7 if using above
+            # #equation, 1 if agnostic)
+            # modspecs$K600_lnQ_nodes_sdlog = rep(0.8, n_KQ_nodes)
+            #
+            # #set daily bounce (how much K can vary by day; 0.7 <= x <= 2.4)
+            # modspecs$K600_daily_sigma_sigma = 1.5
         }
 
         #fit model
