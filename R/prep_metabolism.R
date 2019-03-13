@@ -142,6 +142,9 @@
 #'   be estimated from geographic coordinates and time? Only use light data if
 #'   you're confident that your light sensors accurately represent light reaching
 #'   the upstream area defined by O2 turnover distance.
+#' @param retrieve_air_pres logical; if some AirPres_kPa values are missing, should
+#'   they be retrieved from NCDC (NOAA)? Retrieval will happen automatically if air
+#'   pressure data are required and entirely missing.
 #' @param ... additional arguments passed to \code{imputeTS::na.seasplit}.
 #' @return returns an S4 object containing a \code{data.frame} formatted for
 #'   the model specified by \code{model} and \code{type}.
@@ -164,7 +167,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     fillgaps='interpolation', maxhours=3,
     zq_curve=list(sensor_height=NULL, Z=NULL, Q=NULL, a=NULL, b=NULL,
         fit='power', ignore_oob_Z=TRUE, plot=TRUE),
-    estimate_areal_depth=FALSE, estimate_PAR=TRUE, ...){
+    estimate_areal_depth=FALSE, estimate_PAR=TRUE, retrieve_air_pres=FALSE, ...){
     # zq_curve=list(Z=NULL, Q=NULL, a=NULL, b=NULL), ...){
 
     # type is one of "bayes" or "mle"
@@ -429,41 +432,66 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         dd = left_join(alldates, dd, by='DateTime_UTC')
     }
 
-    #acquire air pressure data if necessary
+    #acquire air pressure data if necessary or desired
     missing_DOsat = all(! c('satDO_mgL','DOsat_pct') %in% vd)
     # missing_waterTemp = ! 'WaterTemp_C' %in% vd
     missing_airPres = ! 'AirPres_kPa' %in% vd
     need_airPres_for_DOsat = missing_DOsat & missing_airPres
     need_airPres_for_Q = using_zq_curve & missing_airPres & missing_depth #revisit "depth" here and elsewhere
 
-    if(need_airPres_for_DOsat | need_airPres_for_Q){
+    if(need_airPres_for_DOsat || need_airPres_for_Q || retrieve_air_pres){
 
+        got_airpres = FALSE
         airpres = try(retrieve_air_pressure(md, dd), silent=TRUE)
-        if(class(airpres)=='try-error') {
+
+        if(class(airpres) == 'try-error') {
 
             cat('Failed to retrieve air pressure data from NCDC.\n',
                 '\tTrying NCEP. This method is slow and only works in U.S.A.\n')
 
             airpres = try(retrieve_air_pressure2(md, dd), silent=TRUE)
-            if(class(airpres)=='try-error') {
 
+            if(class(airpres) == 'try-error') {
                 warning(paste('Failed to retrieve air pressure data.'),
                     call.=FALSE)
             } else {
-                dd = left_join(dd, airpres, by='DateTime_UTC')
-                dd$AirPres_kPa = zoo::na.approx(dd$AirPres_kPa, na.rm=FALSE, rule=2)
+                got_airpres = TRUE
             }
 
         } else {
-            dd = left_join(dd, airpres, by='DateTime_UTC')
-            dd$AirPres_kPa = zoo::na.approx(dd$AirPres_kPa, na.rm=FALSE, rule=2)
-
+            got_airpres = TRUE
             # linearly interpolate missing values for wind speed and air pressure
             # dd$wind_speed = approx(x=dd$wind_speed, xout=which(is.na(dd$wind_speed)))$y
             # dd$AirPres_kPa = approx(x=dd$AirPres_kPa,
             #     xout=which(is.na(dd$AirPres_kPa)))$y
         }
 
+        #just join airpres to dataframe if AirPres_kPA entirely missing
+        #if AirPres_kPA partly missing, fill in the blanks.
+        if(got_airpres){
+            if(missing_airPres){
+                dd = left_join(dd, airpres, by='DateTime_UTC')
+            } else {
+                colnames(airpres)[colnames(airpres) == 'AirPres_kPa'] = 'x'
+                dd = left_join(dd, airpres, by='DateTime_UTC')
+                missing_airpres = is.na(dd$AirPres_kPa)
+                dd$AirPres_kPa[missing_airpres] = dd$x[missing_airpres]
+                dd$x = NULL
+            }
+
+            #then impute any remaining blanks
+            dd$AirPres_kPa = zoo::na.approx(dd$AirPres_kPa,
+                na.rm=FALSE, rule=2)
+        }
+    }
+
+    airpres_coverage = sum(! is.na(dd$AirPres_kPa)) / nrow(dd)
+    if(airpres_coverage < 0.5){
+        warning(paste0('Air pressure coverage is only ',
+            round(airpres_coverage * 100, 1),
+            '%.\n\tIf you need it to estimate DO saturation or depth, ',
+            'streamMetabolizer may fail.\n\tYou may be able to solve this (or improve ',
+            'your results)\n\tby setting retrieve_air_pres=TRUE.'), call.=FALSE)
     }
 
     #correct any negative or 0 depth values (these break streamMetabolizer)

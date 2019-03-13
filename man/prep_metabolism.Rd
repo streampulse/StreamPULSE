@@ -9,7 +9,8 @@ prep_metabolism(d, model = "streamMetabolizer", type = "bayes",
   fillgaps = "interpolation", maxhours = 3,
   zq_curve = list(sensor_height = NULL, Z = NULL, Q = NULL, a = NULL, b =
   NULL, fit = "power", ignore_oob_Z = TRUE, plot = TRUE),
-  estimate_areal_depth = FALSE, estimate_PAR = TRUE, ...)
+  estimate_areal_depth = FALSE, estimate_PAR = TRUE,
+  retrieve_air_pres = FALSE, ...)
 }
 \arguments{
 \item{d}{the output of \code{request_data},
@@ -81,6 +82,10 @@ from, or a rating curve by which to generate discharge data.}
 be estimated from geographic coordinates and time? Only use light data if
 you're confident that your light sensors accurately represent light reaching
 the upstream area defined by O2 turnover distance.}
+
+\item{retrieve_air_pres}{logical; if some AirPres_kPa values are missing, should
+they be retrieved from NCDC (NOAA)? Retrieval will happen automatically if air
+pressure data are required and entirely missing.}
 
 \item{...}{additional arguments passed to \code{imputeTS::na.seasplit}.}
 }
