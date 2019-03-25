@@ -486,7 +486,8 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     }
 
     airpres_coverage = sum(! is.na(dd$AirPres_kPa)) / nrow(dd)
-    if(airpres_coverage < 0.5){
+    if(! need_airPres_for_DOsat && ! need_airPres_for_Q && ! retrieve_air_pres &&
+        airpres_coverage < 0.5){
         warning(paste0('Air pressure coverage is only ',
             round(airpres_coverage * 100, 1),
             '%.\n\tIf you need it to estimate DO saturation or depth, ',
@@ -636,8 +637,13 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     }
 
     # kPa to atm
+    if(! 'DO_mgL' %in% vd){
+        stop(paste0('streamMetabolizer cannot',
+            ' be run without DO_mgL.'), call.=FALSE)
+    }
+
     if("AirPres_kPa" %in% vd) dd$atmo.pressure = dd$AirPres_kPa / 101.325
-    if(model=="streamMetabolizer"){
+    if(model == "streamMetabolizer"){
         if("satDO_mgL" %in% vd){
             dd$DO.sat = dd$satDO_mgL
         } else {
