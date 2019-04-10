@@ -178,14 +178,14 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
             # av_disch = 1.94
             # logK = log(5.62) + 0.504*log(av_veloc * av_slope) -
             #     0.575*log(av_depth) - 0.0892*log(av_disch)
-            # modspecs$K600_lnQ_nodes_meanlog = rep(logK, n_KQ_nodes)
+            modspecs$K600_lnQ_nodes_meanlog = rep(logK, n_KQ_nodes)
             #
             # #set sd for K prior (0.1 if you've measured K, 0.7 if using above
             # #equation, 1 if agnostic)
-            # modspecs$K600_lnQ_nodes_sdlog = rep(0.8, n_KQ_nodes)
+            modspecs$K600_lnQ_nodes_sdlog = rep(0.7, n_KQ_nodes)
             #
             # #set daily bounce (how much K can vary by day; 0.7 <= x <= 2.4)
-            # modspecs$K600_daily_sigma_sigma = 1.5
+            modspecs$K600_daily_sigma_sigma = 1.5
         }
 
         #fit model
@@ -309,7 +309,8 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
                 # "Pushing your results to the StreamPULSE database\n\t",
                 # "and returning model fit and predictions.\n"))
 
-            user_response = get_user_input('y/n > ')
+            # user_response = get_user_input('y/n > ')
+            user_response = TRUE
             if(user_response){
                 cat('Thank you. Just a moment.\n')
                 push_model_to_server(output=output, deets=deets)
@@ -335,7 +336,8 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
                     # "Pushing your results to the StreamPULSE database\n\t",
                     # "and returning your model fit and predictions.\n"))
 
-                user_response = get_user_input('y/n > ')
+                # user_response = get_user_input('y/n > ')
+                user_response = TRUE
                 if(user_response){
                     cat('Thank you. Just a moment.\n')
                     push_model_to_server(output=output, deets=deets)
@@ -356,7 +358,8 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
             cat(paste0("Your model outperformed the best one on file!\n\t",
                 "May we store your results on the StreamPULSE data portal?\n"))
 
-            user_response = get_user_input('y/n > ')
+            # user_response = get_user_input('y/n > ')
+            user_response = TRUE
             if(user_response){
                 cat('Thank you. Just a moment.\n')
                 push_model_to_server(output=output, deets=deets)
