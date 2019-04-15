@@ -75,6 +75,12 @@
 #'     applying nighttime regression
 #'     \item \code{NA}: applicable only to \code{type='Kmodel'}, for which DO deficit is not estimated
 #'   }
+#' @param skip_prompts logical. If TRUE, you will not be prompted with questions
+#'   about sending your model results to the StreamPULSE server. Prompting occurs in the event
+#'   that your model outperforms the current best model stored by StreamPULSE for the
+#'   site and year modeled. When \code{skip_prompts} is TRUE, your model results will never
+#'   be pushed to the StreamPULSE server, unless there are no results currently stored
+#'   for the site and year modeled. This parameter is useful when fitting models inside a loop.
 #' @seealso \code{\link{request_data}} for acquiring StreamPULSE data;
 #'   \code{\link{prep_metabolism}} for organizing data and acquiring additional
 #'   variables.
@@ -110,7 +116,7 @@
 #' predictions = predict_metab(modelfit)
 fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
     err_proc_acor=FALSE, err_proc_iid=TRUE, ode_method='trapezoid',
-    deficit_src='DO_mod'){
+    deficit_src='DO_mod', skip_prompts=FALSE){
 
     is_powell = grepl('nwis-[0-9]+', d$specs$site)
     fitdata = d$data
@@ -191,6 +197,7 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
         #fit model
         model_fit = streamMetabolizer::metab(specs=modspecs, data=fitdata)
         # saveRDS(model_fit, '~/Desktop/NHC_fit.rds')
+        # model_fit = readRDS('~/Desktop/test_modelfit.rds')###COMMENT THIS####
 
     }else if(model=="BASE"){
         tmp = tempdir() # the temp dir for the data and model
@@ -303,17 +310,22 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
 
         #if no model data on server, push this model up and return
         if(length(modspec$specs) == 0){
-            cat(paste0("No model fits detected for this site and calendar year",
-                ",\n\tso yours is the best fit by default!\n\t",
-                "May we store your results on our data portal?\n"))
-                # "Pushing your results to the StreamPULSE database\n\t",
-                # "and returning model fit and predictions.\n"))
 
-            user_response = get_user_input('y/n > ')
-            if(user_response){
-                cat('Thank you. Just a moment.\n')
+            if(! skip_prompts){
+                cat(paste0("No model fits detected for this site and calendar year",
+                    ",\n\tso yours is the best fit by default!\n\t",
+                    "May we store your results on the StreamPULSE data portal?\n"))
+
+                user_response = get_user_input('y/n > ')
+                if(user_response){
+                    cat('Thank you. Just a moment.\n')
+                    push_model_to_server(output=output, deets=deets)
+                }
+            } else {
+                cat("Pushing your results to the StreamPULSE database\n")
                 push_model_to_server(output=output, deets=deets)
             }
+
             cat(paste0("Returning model fit and predictions.\n"))
             output$details$current_best = NULL
             return(output)
@@ -330,15 +342,20 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
         #if mod penalties equal, compare coverage. if better, push. return.
         if(mods_equal){
             if(coverage_dif > 0){ #this model has better coverage
-                cat(paste0("Your model outperformed the best one on file!\n\t",
-                    "May we store your results on our data portal?\n"))
-                    # "Pushing your results to the StreamPULSE database\n\t",
-                    # "and returning your model fit and predictions.\n"))
 
-                user_response = get_user_input('y/n > ')
-                if(user_response){
-                    cat('Thank you. Just a moment.\n')
-                    push_model_to_server(output=output, deets=deets)
+                if(! skip_prompts){
+                    cat(paste0("Your model outperformed the best one on file!\n\t",
+                        "May we store your results on the StreamPULSE data portal?\n"))
+
+                    user_response = get_user_input('y/n > ')
+                    if(user_response){
+                        cat('Thank you. Just a moment.\n')
+                        push_model_to_server(output=output, deets=deets)
+                    }
+                } else {
+                    cat(paste0("Your model outperformed the best one on file,\n\t",
+                        "but skip_prompts == TRUE, so your results will not\n\t",
+                        "be pushed to the StreamPULSE server.\n"))
                 }
             }
 
@@ -349,17 +366,25 @@ fit_metabolism = function(d, pool_K600='binned', err_obs_iid=TRUE,
 
         #COVERAGE SHOULD NOT BE BASED SOLELY ON START AND END DATE, BUT ALSO NA!
 
-        #if penalties differ, evaluate penaty and coverage differences
+        #if penalties differ, evaluate penalty and coverage differences
         accept = compare_models(pen_dif, coverage_dif)
 
+        # accept=TRUE ####COMMENT THIS####
         if(accept){
-            cat(paste0("Your model outperformed the best one on file!\n\t",
-                "May we store your results on the StreamPULSE data portal?\n"))
 
-            user_response = get_user_input('y/n > ')
-            if(user_response){
-                cat('Thank you. Just a moment.\n')
-                push_model_to_server(output=output, deets=deets)
+            if(! skip_prompts){
+                cat(paste0("Your model outperformed the best one on file!\n\t",
+                    "May we store your results on the StreamPULSE data portal?\n"))
+
+                user_response = get_user_input('y/n > ')
+                if(user_response){
+                    cat('Thank you. Just a moment.\n')
+                    push_model_to_server(output=output, deets=deets)
+                }
+            } else {
+                cat(paste0("Your model outperformed the best one on file,\n\t",
+                    "but skip_prompts == TRUE, so your results will not\n\t",
+                    "be pushed to the StreamPULSE server.\n"))
             }
 
             cat(paste0("Returning model fit and predictions.\n"))
