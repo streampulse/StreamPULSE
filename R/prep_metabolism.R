@@ -444,7 +444,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         got_airpres = FALSE
         airpres = try(retrieve_air_pressure(md, dd), silent=TRUE)
 
-        if(class(airpres) == 'try-error') {
+        if(class(airpres) == 'try-error' || nrow(airpres) == 0) {
 
             cat('Failed to retrieve air pressure data from NCDC.\n',
                 '\tTrying NCEP. This method is slow and only works in U.S.A.\n')

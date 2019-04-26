@@ -138,14 +138,16 @@ retrieve_air_pressure2 = function(md, dd){
         noaa_job = geoknife::geoknife(stencil=station, fabric=fabric, wait=TRUE)
         noaa_data = geoknife::result(noaa_job, with.units=TRUE)
 
-        pres = rbind(pres, noaa_data[,c('DateTime','1')])
+        datcol = ifelse('1' %in% colnames(noaa_data), '1', 'V1')
+        pres = rbind(pres, noaa_data[,c('DateTime', datcol)])
 
         cat('Year', i, 'complete.\n')
     }
 
     pres = data.frame(pres)
 
-    df_out = pres %>% mutate(AirPres_kPa = X1 / 1000,
+    colnames(pres)[colnames(pres) == 'X1'] = 'V1'
+    df_out = pres %>% mutate(AirPres_kPa = V1 / 1000,
         DateTime_UTC=DateTime) %>% select(AirPres_kPa, DateTime_UTC)
 
     return(df_out)
