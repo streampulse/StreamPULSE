@@ -6,7 +6,8 @@
 \usage{
 fit_metabolism(d, pool_K600 = "binned", err_obs_iid = TRUE,
   err_proc_acor = FALSE, err_proc_iid = TRUE,
-  ode_method = "trapezoid", deficit_src = "DO_mod")
+  ode_method = "trapezoid", deficit_src = "DO_mod",
+  skip_prompts = FALSE)
 }
 \arguments{
 \item{d}{the output of \link{prep_metabolism}.}
@@ -60,6 +61,13 @@ should the DO deficit be computed? Options:
   applying nighttime regression
   \item \code{NA}: applicable only to \code{type='Kmodel'}, for which DO deficit is not estimated
 }}
+
+\item{skip_prompts}{logical. If TRUE, you will not be prompted with questions
+about sending your model results to the StreamPULSE server. Prompting occurs in the event
+that your model outperforms the current best model stored by StreamPULSE for the
+site and year modeled. When \code{skip_prompts} is TRUE, your model results will never
+be pushed to the StreamPULSE server, unless there are no results currently stored
+for the site and year modeled. This parameter is useful when fitting models inside a loop.}
 }
 \value{
 returns a list containing the output of \code{streamMetabolizer}'s

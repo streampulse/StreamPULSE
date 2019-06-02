@@ -14,18 +14,17 @@ Opens a shiny app in default browser via localhost.
 }
 \description{
 Generates a Shiny R visualization similar to those found on the
-\href{http://data.streampulse.org:3838/streampulse_diagnostic_plots/}
-{StreamPULSE data portal}.
+\href{http://data.streampulse.org:3838/streampulse_diagnostic_plots/}{StreamPULSE data portal}.
 }
 \examples{
 streampulse_data = request_data(sitecode='NC_Eno',
-    startdate='2016-06-10', enddate='2016-10-23')
+  startdate='2016-06-10', enddate='2016-10-23')
 
 fitdata = prep_metabolism(d=streampulse_data, type='bayes',
-    model='streamMetabolizer', interval='15 min',
-    rm_flagged=list('Bad Data', 'Questionable'), fillgaps=fillgaps,
-    zq_curve=list(sensor_height=NULL, Z=Z_data, Q=Q_data,
-    fit='power', plot=TRUE), estimate_areal_depth=TRUE)
+  model='streamMetabolizer', interval='15 min',
+  rm_flagged=list('Bad Data', 'Questionable'), fillgaps=fillgaps,
+  zq_curve=list(sensor_height=NULL, Z=Z_data, Q=Q_data,
+  fit='power', plot=TRUE), estimate_areal_depth=TRUE)
 
 modelfit = fit_metabolism(fitdata)
 
