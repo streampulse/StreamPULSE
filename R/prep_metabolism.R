@@ -62,23 +62,19 @@
 #' found by clicking the "Before modeling stream metabolism..." button on
 #' \url{https://data.streampulse.org}.
 #'
-#' The between-sample interval specified by the user via the
-#' \code{interval} parameter is
-#' also determined programmatically
+#' The between-sample interval is determined programmatically
 #' for each variable within \code{d}. It is assumed to be the mode
 #' if the between-sample interval varies within a series. If the
-#' between-sample interval varies across variables, the longest interval is
-#' used for the whole dataset. If the user-specified \code{interval}
-#' (i.e. the argument to this parameter) is a multiple of the programmatically
-#' determined interval, the dataset will be quietly coerced to the desired
-#' interval.
+#' between-sample interval varies across series, the longest interval is
+#' used for the whole dataset, unless \code{interval} is specified.
+#' If the user-specified interval is a multiple of the programmatically
+#' determined longest interval, the dataset will be quietly coerced to the
+#' user-specified interval.
 #' This is useful for thinning extremely long datasets in order to
-#' avoid out-of-memory errors while running models.
-#' If the desired interval is not a multiple of the true sample interval
-#' (i.e. the programmatically determined interval), gaps will be introduced to
-#' the dataset and the user will be warned. If user-specified and
-#' programmatically-determined intervals are identical, nothing will be
-#' changed.
+#' avoid out-of-memory errors while running models. If intervals vary across
+#' series, the user may specify which of the available intervals to coerce
+#' all series to. If user-specified and
+#' programmatically-determined intervals are identical, no action is taken.
 #'
 #' @author Mike Vlah, \email{vlahm13@gmail.com}
 #' @author Aaron Berdanier
@@ -88,9 +84,10 @@
 #'   \code{type} must be set to \code{'bayes'}.
 #' @param type either 'mle' or 'bayes'. If \code{model='BASE'}, \code{type}
 #'   must be set to \code{'bayes'}.
-#' @param interval a string specifying the between-sample time interval of the
-#'   dataset, or the interval to which the dataset should be coerced. Must be
-#'   of the form '<number> <unit>', as in '15 min' (the default). Unit can be
+#' @param interval a string specifying the between-sample time interval to
+#'   which the dataset should be coerced, or NA to determine automatically.
+#'   If not NA, Must be
+#'   of the form '<number> <unit>', as in '15 min'. Unit can be
 #'   'min' or 'hour'. Non-integer hours are tolerated, but minutes must be
 #'   specified as integers. See details.
 #' @param rm_flagged a list containing any of 'Interesting', 'Questionable',
@@ -163,7 +160,7 @@
 #'     zq_curve=list(sensor_height=NULL, Z=Z_data, Q=Q_data,
 #'     fit='power', plot=TRUE), estimate_areal_depth=TRUE)
 prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
-    interval='15 min', rm_flagged=list('Bad Data', 'Questionable'),
+    interval=NA, rm_flagged=list('Bad Data', 'Questionable'),
     fillgaps='interpolation', maxhours=3,
     zq_curve=list(sensor_height=NULL, Z=NULL, Q=NULL, a=NULL, b=NULL,
         fit='power', ignore_oob_Z=TRUE, plot=TRUE),
@@ -190,8 +187,9 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         stop('BASE not yet supported', call.=FALSE) ###
         type="bayes" #can't use mle mode with BASE
     }
-    if(!grepl('\\d+ (min|hour)', interval, perl=TRUE)){ #correct interval format
-        stop(paste('Interval must be of the form "length [space] unit"\n\twhere',
+    if(! is.na(interval) &&
+            ! grepl('\\d+ (min|hour)', interval, perl=TRUE)){
+        stop(paste('Interval (if not NA) must be of the form "length [space] unit"\n\twhere',
             'length is numeric and unit is either "min" or "hour".'), call.=FALSE)
     }
     if(!fillgaps %in% c('interpolation','locf','mean','random','kalman','ma',
@@ -311,13 +309,24 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     }
 
     #will later coerce all vars to the longest sample interval
+    #unless `interval` is specified
     if(length(unique(ints_by_var$int)) > 1){
         input_int = max(ints_by_var$int)
-        message(paste0('Multiple sample intervals detected across variables (',
-            paste(unique(ints_by_var$int), collapse=' min, '),
-            ' min).\n\tUsing ', input_int, ' so as not to introduce gaps.'))
+        if(! is.na(interval)){
+            message(paste0('Multiple sample intervals detected across variables (',
+                paste(unique(ints_by_var$int), collapse=' min, '),
+                ' min).\n\tWill attempt to coerce all variables to desired ',
+                'interval: ', interval, '.'))
+        } else {
+            interval = paste(input_int, 'min')
+            message(paste0('Multiple sample intervals detected across variables (',
+                paste(unique(ints_by_var$int), collapse=' min, '),
+                ' min).\n\tUsing ', input_int, ' so as not to introduce gaps.\n\t',
+                'You may control this behavior with the "interval" parameter.'))
+        }
     } else {
-        input_int = ints_by_var$int[1] #all the same
+        input_int = ints_by_var$int[1] #all intervals equal
+        interval = paste(input_int, 'min')
     }
 
     #remove (replace with NA) flagged data if desired
@@ -389,12 +398,22 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     int_parts = strsplit(interval, ' ')[[1]] #get num and str components
     desired_int = as.difftime(as.numeric(int_parts[1]),
         units=paste0(int_parts[2], 's')) #get desired interval as difftime
-    remainder = as.double(desired_int, units='mins') %% as.double(input_int)
-    if(remainder != 0){
-        message(paste0('Warning: Desired time interval (', interval,
-            ') is not a multiple of sample interval (', #warning doesn't bubble
-            as.character(as.numeric(input_int)), #up properly if imputation
-            ' min).\n\tGaps will be introduced!')) #error occurs, so using message
+    desired_int_num = as.double(desired_int, units='mins')
+    remainder = desired_int_num %% as.double(input_int)
+
+    if(! desired_int_num %in% ints_by_var$int &&
+            remainder != 0){
+        #warning doesn't bubble up properly if imputation error occurs,
+        #so using message instead
+        # message(paste0('Warning: Desired time interval (', interval,
+        #     ') is not a multiple of sample interval (',
+        #     as.character(as.numeric(input_int)),
+        #     ' min).\n\tGaps will be introduced!'))
+        stop(paste0('Desired time interval (', interval,
+            ') must conform to at least one\n\tof the supplied variables:\n',
+            paste0('\t\t', ints_by_var$var, ': ', ints_by_var$int, ' min',
+                collapse='\n'), '\n\tIt can also be a multiple of the ',
+            'largest interval (if you want to thin the dataset).'), call.=FALSE)
     }
 
     #convert user-specified interval to minutes if it's in hours (because
@@ -403,34 +422,38 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         interval = paste(as.numeric(int_parts[1]) * 60, 'min')
     }
 
-    #coerce to desired time interval. If multiple sample intervals are found...
-    if(length(unique(ints_by_var$int)) > 1){
+    # #coerce all variables to a particular interval if intervals differ
+    # if(length(unique(ints_by_var$int)) > 1 || ){
 
-        #if some data are offset from the starting row, this may grab NAs instead
-        #of data, so it iterates until finds the right starting row.
-        na_props = 1
-        starting_row = 1
-        while(sum(na_props > 0.8) / length(na_props) > 0.4){ #heuristic test
+    #this chunk thins the dataset if desired, and ensures no missing records.
+    #(i.e. not just NAs, but entirely missing rows for some dates).
+    #if some data are offset from the starting row, this may grab NAs instead
+    #of data, so it iterates until it finds the right starting row.
+    na_props = 1
+    starting_row = 1
+    while( (sum(na_props > 0.8) / length(na_props)) > 0.4){ #heuristic test
 
-            if(starting_row > 10){
-                stop(paste0('Unable to coerce data to desired time interval.',
-                    '\n\tTry specifying a different interval.'), call.=FALSE)
-            }
-            alldates = data.frame(DateTime_UTC=seq.POSIXt(dd[starting_row,1],
-                dd[nrow(dd),1], by=interval))
-            dd_temp = left_join(alldates, dd, by='DateTime_UTC')
-
-            #get new NA proportions for each column
-            na_props = apply(dd_temp[,-c(1:3)], 2,
-                function(x){ sum(is.na(x)) / length(x) })
-            starting_row = starting_row + 1
+        if(starting_row > 10){
+            stop(paste0('Unable to coerce data to desired time interval.',
+                '\n\tTry specifying a different interval.'), call.=FALSE)
         }
-        dd = dd_temp
-    } else { #if just one sample interval is found, it's easy.
-        alldates = data.frame(DateTime_UTC=seq.POSIXt(dd[1,1],
-            dd[nrow(dd),1], by=interval))
-        dd = left_join(alldates, dd, by='DateTime_UTC')
+        alldates = data.frame(DateTime_UTC=seq.POSIXt(dd[starting_row,1],
+            dd[nrow(dd), 1], by=interval))
+        dd_temp = left_join(alldates, dd, by='DateTime_UTC')
+
+        #get new NA proportions for each column
+        na_props = apply(dd_temp[,-c(1:3)], 2,
+            function(x){ sum(is.na(x)) / length(x) })
+        starting_row = starting_row + 1
     }
+    dd = dd_temp
+
+    # #if just one sample interval is found, just ensure no missing records
+    # } else {
+    #     alldates = data.frame(DateTime_UTC=seq.POSIXt(dd[1,1],
+    #         dd[nrow(dd),1], by=interval))
+    #     dd = left_join(alldates, dd, by='DateTime_UTC')
+    # }
 
     #acquire air pressure data if necessary or desired
     missing_DOsat = all(! c('satDO_mgL','DOsat_pct') %in% vd)
@@ -488,7 +511,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     airpres_coverage = sum(! is.na(dd$AirPres_kPa)) / nrow(dd)
     if(! need_airPres_for_DOsat && ! need_airPres_for_Q && ! retrieve_air_pres &&
         airpres_coverage < 0.5){
-        warning(paste0('Air pressure coverage is only ',
+        warning(paste0('Air pressure coverage is ',
             round(airpres_coverage * 100, 1),
             '%.\n\tIf you need it to estimate DO saturation or depth, ',
             'streamMetabolizer may fail.\n\tYou may be able to solve this (or improve ',
