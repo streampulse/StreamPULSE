@@ -75,7 +75,8 @@ request_data = function(sitecode, startdate=NULL, enddate=NULL, variables=NULL,
     }
     if(all(is.null(variables))){
         variables = c('DO_mgL','DOsat_pct','satDO_mgL','WaterPres_kPa',
-            'Depth_m','WaterTemp_C','Light_PAR','AirPres_kPa','Discharge_m3s')
+            'Depth_m','WaterTemp_C','Light_PAR','AirPres_kPa','Discharge_m3s',
+            'Level_m')
         # 'Level_m', #level is currently not used, but could be soon
         cat(paste0('Requesting all variables potentially useful for ',
             'metabolism modeling.\n'))
