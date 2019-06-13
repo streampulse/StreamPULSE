@@ -344,17 +344,19 @@ KvGPP_plot = function(mod_out, slice, click=NULL){
 
 KvQ_plot = function(mod_out, slicex, slicey, click=NULL){
 
-    nodes = mod_out$fit$KQ_binned$lnK600_lnQ_nodes_mean
+    # nodes = mod_out$fit$KQ_binned$lnK600_lnQ_nodes_mean
     log_Q = log(slicex$discharge.daily)
-    xminplot = min(c(log_Q, nodes), na.rm=TRUE)
-    xmaxplot = max(c(log_Q, nodes), na.rm=TRUE)
+    xminplot = min(c(log_Q), na.rm=TRUE)
+    xmaxplot = max(c(log_Q), na.rm=TRUE)
+    # xminplot = min(c(log_Q, nodes), na.rm=TRUE)
+    # xmaxplot = max(c(log_Q, nodes), na.rm=TRUE)
     KQmod = lm(slicey$K600_daily_mean ~ log_Q)
     R2 = sprintf('%1.2f', summary(KQmod)$adj.r.squared)
     plot(log_Q, slicey$K600_daily_mean, xlim=c(xminplot, xmaxplot),
         col='purple4', xlab='Log daily mean Q (cms)', ylab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
-    abline(v=nodes, lty=2, col='darkred')
-    mtext('log Q node centers', side=3, line=0, adj=1, cex=0.8, col='darkred')
+    # abline(v=nodes, lty=2, col='darkred')
+    # mtext('log Q node centers', side=3, line=0, adj=1, cex=0.8, col='darkred')
     mtext(bquote('Adj.' ~ R^2 * ':' ~ .(R2)), side=3, line=0, adj=0,
         cex=0.8, col='gray50')
     abline(KQmod, lty=2, col='gray50', lwd=2)
