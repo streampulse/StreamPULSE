@@ -318,7 +318,9 @@ gap_fill = function(df, maxspan_days=5, knn=3, sint, algorithm, maxhours, ...){
     # nearest_neighbors = top_k(select(daily_averages, -date), k=knn, minobs=3)
 
     # filled = fill_missing(input_data, nearest_neighbors, daily_averages,
-    filled = fill_missing(input_data,
+
+    #this function internally disabled
+    filled = fill_missing(imputed,
         date_index, maxspan_days, samp=samples_per_day)
 
     #remove columns with 0 or 1 non-NA value. these cannot be imputed.
