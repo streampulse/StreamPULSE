@@ -204,7 +204,8 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     }
     if(any(rm_flagged != 'none') & ! 'flagtype' %in% colnames(d$data)){
         stop(paste0('No flag data available.\n\t',
-            'Call request_data again with flags=TRUE.'), call.=FALSE)
+            'Please visit https://data.streampulse.org/qaqc_sensordata\n\t',
+            'to supply flag (QA/QC) information.'), call.=FALSE)
     }
     if(! 'list' %in% class(zq_curve)){
         stop('Argument "zq_curve" must be a list.', call.=FALSE)
