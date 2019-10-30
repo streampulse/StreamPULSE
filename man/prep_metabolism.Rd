@@ -5,7 +5,7 @@
 \title{Prepare StreamPULSE data for metabolism modeling}
 \usage{
 prep_metabolism(d, model = "streamMetabolizer", type = "bayes",
-  interval = "15 min", rm_flagged = list("Bad Data", "Questionable"),
+  interval = NA, rm_flagged = list("Bad Data", "Questionable"),
   fillgaps = "interpolation", maxhours = 3,
   zq_curve = list(sensor_height = NULL, Z = NULL, Q = NULL, a = NULL, b =
   NULL, fit = "power", ignore_oob_Z = TRUE, plot = TRUE),
@@ -22,9 +22,10 @@ or a \code{list} of \code{data.frame}s so organized.}
 \item{type}{either 'mle' or 'bayes'. If \code{model='BASE'}, \code{type}
 must be set to \code{'bayes'}.}
 
-\item{interval}{a string specifying the between-sample time interval of the
-dataset, or the interval to which the dataset should be coerced. Must be
-of the form '<number> <unit>', as in '15 min' (the default). Unit can be
+\item{interval}{a string specifying the between-sample time interval to
+which the dataset should be coerced, or NA to determine automatically.
+If not NA, Must be
+of the form '<number> <unit>', as in '15 min'. Unit can be
 'min' or 'hour'. Non-integer hours are tolerated, but minutes must be
 specified as integers. See details.}
 
@@ -157,23 +158,19 @@ oxygen turnover distance. More on this and other considerations can be
 found by clicking the "Before modeling stream metabolism..." button on
 \url{https://data.streampulse.org}.
 
-The between-sample interval specified by the user via the
-\code{interval} parameter is
-also determined programmatically
+The between-sample interval is determined programmatically
 for each variable within \code{d}. It is assumed to be the mode
 if the between-sample interval varies within a series. If the
-between-sample interval varies across variables, the longest interval is
-used for the whole dataset. If the user-specified \code{interval}
-(i.e. the argument to this parameter) is a multiple of the programmatically
-determined interval, the dataset will be quietly coerced to the desired
-interval.
+between-sample interval varies across series, the longest interval is
+used for the whole dataset, unless \code{interval} is specified.
+If the user-specified interval is a multiple of the programmatically
+determined longest interval, the dataset will be quietly coerced to the
+user-specified interval.
 This is useful for thinning extremely long datasets in order to
-avoid out-of-memory errors while running models.
-If the desired interval is not a multiple of the true sample interval
-(i.e. the programmatically determined interval), gaps will be introduced to
-the dataset and the user will be warned. If user-specified and
-programmatically-determined intervals are identical, nothing will be
-changed.
+avoid out-of-memory errors while running models. If intervals vary across
+series, the user may specify which of the available intervals to coerce
+all series to. If user-specified and
+programmatically-determined intervals are identical, no action is taken.
 }
 \examples{
 query_available_data(region='all')

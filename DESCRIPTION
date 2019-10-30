@@ -1,8 +1,8 @@
 Package: StreamPULSE
 Title: Run Stream Metabolism Models on StreamPULSE data
-Version: 0.0.0.9041
+Version: 0.0.0.9043
 Authors@R: c(person("Mike", "Vlah", email = "vlahm13@gmail.com", role = c("aut", "cre")), person("Aaron", "Berdanier", email = "aaron.berdanier@gmail.com", role = "aut"))
-Date: 2019-08-29
+Date: 2020-01-22
 Description: StreamPULSE is a community of researchers working to
     answer fundamental questions about ecosystem production and
     respiration in streams and rivers. The StreamPULSE project
@@ -15,7 +15,7 @@ Description: StreamPULSE is a community of researchers working to
     data acquisition from the StreamPULSE database, data
     supplementation where necessary, formatting for streamMetabolizer
     or BASE, as well as model fitting and prediction.
-Depends: R (>= 3.3.2),
+Depends: R (>= 3.6.1),
     shiny,Cairo,dplyr
 Imports:
     httr,jsonlite,tidyr,imputeTS,ks,geosphere,readr,

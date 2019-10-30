@@ -8,8 +8,7 @@ query_available_results(region = NULL, site = NULL, year = NULL)
 }
 \arguments{
 \item{region}{string representing region. Must be a StreamPULSE region
-abbreviation like 'NC' or 'AZ'. Set this
-argument to 'all' for a list of all available region and site abbreviations.}
+abbreviation like 'NC' or 'AZ', or 'all' for a list of all available model results.}
 
 \item{site}{string representing site. Must be a StreamPULSE site
 abbreviation like 'Eno' or 'LV'.}
