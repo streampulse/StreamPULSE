@@ -80,7 +80,7 @@ FindandCollect_airpres = function(lat, long, start_datetime, end_datetime) {
     y$air_temp = y$air_temp/10
     y$DateTime_UTC = readr::parse_datetime(paste0(y$y,"-",
         sprintf("%02d",y$m),"-",sprintf("%02d",y$d)," ",sprintf("%02d",y$h),
-        ":00:00 0"), "%F %T %Z")
+        ":00:00"), "%F %T")
     y <- y[with(y, order(DateTime_UTC)),]
     y = tibble::as_tibble(y) %>% select(DateTime_UTC,air_temp,air_kPa)
     ss = tibble::tibble(DateTime_UTC=seq(y$DateTime_UTC[1],
