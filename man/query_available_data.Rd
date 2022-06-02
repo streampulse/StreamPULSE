@@ -4,8 +4,13 @@
 \alias{query_available_data}
 \title{View sites, dates, and variables available in the StreamPULSE database}
 \usage{
-query_available_data(region = NULL, site = NULL, startdate = NULL,
-  enddate = NULL, variable = NULL)
+query_available_data(
+  region = NULL,
+  site = NULL,
+  startdate = NULL,
+  enddate = NULL,
+  variable = NULL
+)
 }
 \arguments{
 \item{region}{string representing region. Must be a StreamPULSE region
