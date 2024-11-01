@@ -115,6 +115,8 @@ retrieve_air_pressure = function(md, dd){
 
 retrieve_air_pressure2 = function(md, dd){
 
+    #broken as of summer 2024. could be used again when usgs gets THREDDS replacement up
+
     # sites2 <<- sites
     # dd2 <<- dd
     sites = md
@@ -149,6 +151,108 @@ retrieve_air_pressure2 = function(md, dd){
     colnames(pres)[colnames(pres) == 'X1'] = 'V1'
     df_out = pres %>% mutate(AirPres_kPa = V1 / 1000,
         DateTime_UTC=DateTime) %>% select(AirPres_kPa, DateTime_UTC)
+
+    return(df_out)
+}
+
+retrieve_air_pressure3 = function(md, dd){
+
+    lat = md$lat
+    lon = md$lon
+    startdate = as.Date(dd$DateTime_UTC[1])
+    enddate = as.Date(dd$DateTime_UTC[nrow(dd)])
+
+    cat('Collecting air pressure data from NLDAS (or GLDAS outside CONUS).\n')
+    # capture.output(df <- suppressWarnings(FindandCollect_airpres(lat, long,
+    #     start_datetime, end_datetime)))
+
+    if(enddate < as.Date('1979-01-01')){
+        warning('Cannot retrieve air pressure before 1979.')
+        stop()
+    }
+
+    if(startdate < as.Date('1979-01-01')){
+        warning('Cannot retrieve air pressure before 1979.')
+        startdate <- as.Date('1979-01-02')
+    }
+
+    ##prep
+    if(startdate == enddate) enddate <- enddate + 1
+    startdate <- as.character(startdate)
+    enddate <- as.character(enddate)
+
+    tmp_dir <- file.path(tempdir(), 'ldas')
+    dir.create(tmp_dir,
+               recursive = TRUE,
+               showWarnings = FALSE)
+
+    tempf <- file.path(tmp_dir,
+                       paste0('precip', as.numeric(Sys.time()), '.dat'))
+
+    df_out <- tibble()
+
+    ##make NLDAS request
+    endpoint <- 'https://hydro1.gesdisc.eosdis.nasa.gov/daac-bin/access/timeseries.cgi?variable=NLDAS2:NLDAS_FORA0125_H_v2.0:'
+    param <- 'PSurf' #surface pressure in Pa
+    location <- paste0('&location=GEOM:POINT(', lon, ',%20', lat, ')')
+    daterange <- paste0('&startDate=', startdate, 'T00&endDate=', enddate, 'T23')
+    type <- '&type=asc2'
+    req <- paste0(endpoint, param, location, daterange, type)
+
+    download.file(url = req, method = 'curl', destfile = tempf)
+
+    contents <- readr::read_tsv(tempf,
+                                skip = 13,
+                                show_col_types = FALSE,
+                                col_names = FALSE)
+
+    if(nrow(contents) && !
+       (nrow(contents) == 1 && is.na(contents$X1[1]))){
+
+        df_out <- contents %>%
+            rename(DateTime_UTC = X1, AirPres_kPa = X2) %>%
+            mutate(AirPres_kPa = if_else(AirPres_kPa == '-9999', NA, AirPres_kPa),
+                   AirPres_kPa = as.numeric(AirPres_kPa) / 1000) %>%
+            as.data.frame()
+
+    } else {
+
+        oob <- any(grepl('^lat= $', readr::read_lines(tempf)))
+        if(oob){
+
+            if(enddate < as.Date('2000-01-01')){
+                warning('non-CONUS air pressure data (GLDAS) only available after year 2000.')
+                stop()
+            }
+
+            if(startdate < as.Date('2000-01-01')){
+                warning('non-CONUS air pressure data (GLDAS) only available after year 2000.')
+                startdate <- '2000-01-01'
+                daterange <- paste0('&startDate=', startdate, 'T00&endDate=', enddate, 'T23')
+            }
+
+            #use GLDAS instead of NLDAS
+            endpoint <- 'https://hydro1.gesdisc.eosdis.nasa.gov/daac-bin/access/timeseries.cgi?variable=GLDAS2:GLDAS_NOAH025_3H_v2.1:'
+            param <- 'Psurf_f_inst' #3-hourly surface air pressure in Pa
+            req <- paste0(endpoint, param, daterange, location, type)
+
+            download.file(url = req, method = 'curl', destfile = tempf)
+            contents <- readr::read_tsv(tempf,
+                                        skip = 13,
+                                        show_col_types = FALSE,
+                                        col_names = FALSE)
+
+            df_out <- contents %>%
+                rename(DateTime_UTC = X1, AirPres_kPa = X2) %>%
+                mutate(AirPres_kPa = if_else(AirPres_kPa == '-9999', NA, AirPres_kPa),
+                       AirPres_kPa = as.numeric(AirPres_kPa) / 1000) %>%
+                as.data.frame()
+        }
+    }
+
+    unlink(tempf)
+
+    # cat('\n')
 
     return(df_out)
 }

@@ -160,11 +160,11 @@
 #'     zq_curve=list(sensor_height=NULL, Z=Z_data, Q=Q_data,
 #'     fit='power', plot=TRUE), estimate_areal_depth=TRUE)
 prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
-    interval=NA, rm_flagged=list('Bad Data', 'Questionable'),
-    fillgaps='interpolation', maxhours=3,
-    zq_curve=list(sensor_height=NULL, Z=NULL, Q=NULL, a=NULL, b=NULL,
-        fit='power', ignore_oob_Z=TRUE, plot=TRUE),
-    estimate_areal_depth=FALSE, estimate_PAR=TRUE, retrieve_air_pres=FALSE, ...){
+                           interval=NA, rm_flagged=list('Bad Data', 'Questionable'),
+                           fillgaps='interpolation', maxhours=3,
+                           zq_curve=list(sensor_height=NULL, Z=NULL, Q=NULL, a=NULL, b=NULL,
+                                         fit='power', ignore_oob_Z=TRUE, plot=TRUE),
+                           estimate_areal_depth=FALSE, estimate_PAR=TRUE, retrieve_air_pres=FALSE, ...){
     # zq_curve=list(Z=NULL, Q=NULL, a=NULL, b=NULL), ...){
 
     # type is one of "bayes" or "mle"
@@ -188,36 +188,36 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         type="bayes" #can't use mle mode with BASE
     }
     if(! is.na(interval) &&
-            ! grepl('\\d+ (min|hour)', interval, perl=TRUE)){
+       ! grepl('\\d+ (min|hour)', interval, perl=TRUE)){
         stop(paste('Interval (if not NA) must be of the form "length [space] unit"\n\twhere',
-            'length is numeric and unit is either "min" or "hour".'), call.=FALSE)
+                   'length is numeric and unit is either "min" or "hour".'), call.=FALSE)
     }
     if(!fillgaps %in% c('interpolation','locf','mean','random','kalman','ma',
-        'none')){
+                        'none')){
         stop(paste0("fillgaps must be one of 'interpolation', 'locf', 'mean',",
-            "\n\t'random', 'kalman', 'ma', or 'none'"), call.=FALSE)
+                    "\n\t'random', 'kalman', 'ma', or 'none'"), call.=FALSE)
     }
     if(any(! rm_flagged %in% list('Bad Data','Questionable','Interesting')) &
-            any(rm_flagged != 'none')){
+       any(rm_flagged != 'none')){
         stop(paste0("rm_flagged must either be 'none' or a list containing any",
-            " of:\n\t'Bad Data', 'Questionable', 'Interesting'."), call.=FALSE)
+                    " of:\n\t'Bad Data', 'Questionable', 'Interesting'."), call.=FALSE)
     }
     if(any(rm_flagged != 'none') & ! 'flagtype' %in% colnames(d$data)){
         stop(paste0('No flag data available.\n\t',
-            'Please visit https://data.streampulse.org/qaqc_sensordata\n\t',
-            'to supply flag (QA/QC) information.'), call.=FALSE)
+                    'Please visit https://data.streampulse.org/qaqc_sensordata\n\t',
+                    'to supply flag (QA/QC) information.'), call.=FALSE)
     }
     if(! 'list' %in% class(zq_curve)){
         stop('Argument "zq_curve" must be a list.', call.=FALSE)
     }
     if(type == 'mle'){
         stop('MLE mode is not currently available. Please use type="bayes".',
-            call.=FALSE)
+             call.=FALSE)
     }
 
     ab_supplied = zq_supplied = FALSE
     using_zq_curve = !all(unlist(lapply(zq_curve[c('sensor_height',
-        'a','b','Z','Q')], is.null)))
+                                                   'a','b','Z','Q')], is.null)))
     if(using_zq_curve){
 
         #unpack arguments supplied to zq_curve
@@ -233,7 +233,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
             fit = zq_curve$fit
             if(! fit %in% c('power', 'exponential', 'linear')){
                 stop(paste0('Argument to "fit" must be one of: "power", ',
-                    '"exponential", "linear".'), call.=FALSE)
+                            '"exponential", "linear".'), call.=FALSE)
             }
         }
         if(!is.null(zq_curve$ignore_oob_Z)) ignore_oob_Z = zq_curve$ignore_oob_Z
@@ -250,14 +250,14 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         }
         if(ab_supplied & zq_supplied){
             warning(paste0('Parameters (a, b) and data (Z, Q) supplied for ',
-                'rating curve.\n\tOnly one set needed, so ignoring data.'),
-                call.=FALSE)
+                           'rating curve.\n\tOnly one set needed, so ignoring data.'),
+                    call.=FALSE)
             zq_supplied = FALSE
         } else {
             if(!ab_supplied & !zq_supplied){
                 stop(paste0('Argument zq_curve must include either Z and Q as ',
-                    'vectors of data\n\tor a and b as parameters of a rating ',
-                    'curve.'), call.=FALSE)
+                            'vectors of data\n\tor a and b as parameters of a rating ',
+                            'curve.'), call.=FALSE)
             }
         }
     }
@@ -286,16 +286,16 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
             # if gaps or interval change, get mode interval
             uniqv = unique(run_lengths$values)
             input_int = as.numeric(names(which.max(tapply(run_lengths$lengths,
-                run_lengths$values, sum)))) / 60
+                                                          run_lengths$values, sum)))) / 60
 
             if(any(uniqv %% min(uniqv) != 0)){ #if underlying pattern changes
                 warning(paste0('Sample interval is not consistent for ', varz[i],
-                    '\n\tGaps will be introduced!\n\t',
-                    'Using the most common interval: ',
-                    as.character(input_int), ' mins.'), call.=FALSE)
+                               '\n\tGaps will be introduced!\n\t',
+                               'Using the most common interval: ',
+                               as.character(input_int), ' mins.'), call.=FALSE)
             } else {
                 message(paste0(length(run_lengths$lengths)-1,
-                    ' sample gap(s) detected in ', varz[i], '.'))
+                               ' sample gap(s) detected in ', varz[i], '.'))
             }
 
             #store the (most common) sample interval for each variable
@@ -305,7 +305,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
 
             # if consistent, just grab the diff between the first two times
             ints_by_var[i,2] = difftime(dt_by_var[2],  dt_by_var[1],
-                units='mins')
+                                        units='mins')
         }
     }
 
@@ -315,15 +315,15 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         input_int = max(ints_by_var$int)
         if(! is.na(interval)){
             message(paste0('Multiple sample intervals detected across variables (',
-                paste(unique(ints_by_var$int), collapse=' min, '),
-                ' min).\n\tWill attempt to coerce all variables to desired ',
-                'interval: ', interval, '.'))
+                           paste(unique(ints_by_var$int), collapse=' min, '),
+                           ' min).\n\tWill attempt to coerce all variables to desired ',
+                           'interval: ', interval, '.'))
         } else {
             interval = paste(input_int, 'min')
             message(paste0('Multiple sample intervals detected across variables (',
-                paste(unique(ints_by_var$int), collapse=' min, '),
-                ' min).\n\tUsing ', input_int, ' so as not to introduce gaps.\n\t',
-                'You may control this behavior with the "interval" parameter.'))
+                           paste(unique(ints_by_var$int), collapse=' min, '),
+                           ' min).\n\tUsing ', input_int, ' so as not to introduce gaps.\n\t',
+                           'You may control this behavior with the "interval" parameter.'))
         }
     } else {
         input_int = ints_by_var$int[1] #all intervals equal
@@ -348,11 +348,6 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         dd$variable[dd$variable=="USGSDischarge_m3s"] = "Discharge_m3s"
     }
 
-
-    # dd2 <<- dd; d2 <<- d
-    # stop('a')
-    # dd = dd2; d = d2
-
     vd = unique(dd$variable) # variables
     dd = tidyr::spread(dd, variable, value) # spread out data
     md = d$sites # metadata
@@ -370,7 +365,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         dd$Depth_m = dd$Level_m
         vd = c(vd, 'Depth_m')
         warning(paste0('Using supplied level data in place of missing depth data.',
-            '\n\tDepth would be more accurate!'), call.=FALSE)
+                       '\n\tDepth would be more accurate!'), call.=FALSE)
     }
     # if('Level_m' %in% vd & 'Depth_m' %in% vd){ #use col with more data if both
     #     na_cnt = sapply(dd[,c('Level_m','Depth_m')], function(x) sum(is.na(x)))
@@ -398,12 +393,12 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     # check if desired interval is compatible with sample interval
     int_parts = strsplit(interval, ' ')[[1]] #get num and str components
     desired_int = as.difftime(as.numeric(int_parts[1]),
-        units=paste0(int_parts[2], 's')) #get desired interval as difftime
+                              units=paste0(int_parts[2], 's')) #get desired interval as difftime
     desired_int_num = as.double(desired_int, units='mins')
     remainder = desired_int_num %% as.double(input_int)
 
     if(! desired_int_num %in% ints_by_var$int &&
-            remainder != 0){
+       remainder != 0){
         #warning doesn't bubble up properly if imputation error occurs,
         #so using message instead
         # message(paste0('Warning: Desired time interval (', interval,
@@ -411,10 +406,10 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         #     as.character(as.numeric(input_int)),
         #     ' min).\n\tGaps will be introduced!'))
         stop(paste0('Desired time interval (', interval,
-            ') must conform to at least one\n\tof the supplied variables:\n',
-            paste0('\t\t', ints_by_var$var, ': ', ints_by_var$int, ' min',
-                collapse='\n'), '\n\tIt can also be a multiple of the ',
-            'largest interval (if you want to thin the dataset).'), call.=FALSE)
+                    ') must conform to at least one\n\tof the supplied variables:\n',
+                    paste0('\t\t', ints_by_var$var, ': ', ints_by_var$int, ' min',
+                           collapse='\n'), '\n\tIt can also be a multiple of the ',
+                    'largest interval (if you want to thin the dataset).'), call.=FALSE)
     }
 
     #convert user-specified interval to minutes if it's in hours (because
@@ -436,15 +431,15 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
 
         if(starting_row > 10){
             stop(paste0('Unable to coerce data to desired time interval.',
-                '\n\tTry specifying a different interval.'), call.=FALSE)
+                        '\n\tTry specifying a different interval.'), call.=FALSE)
         }
         alldates = data.frame(DateTime_UTC=seq.POSIXt(dd[starting_row,1],
-            dd[nrow(dd), 1], by=interval))
+                                                      dd[nrow(dd), 1], by=interval))
         dd_temp = left_join(alldates, dd, by='DateTime_UTC')
 
         #get new NA proportions for each column
         na_props = apply(dd_temp[,-c(1:3)], 2,
-            function(x){ sum(is.na(x)) / length(x) })
+                         function(x){ sum(is.na(x)) / length(x) })
         starting_row = starting_row + 1
     }
     dd = dd_temp
@@ -463,31 +458,18 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     need_airPres_for_DOsat = missing_DOsat & missing_airPres
     need_airPres_for_Q = using_zq_curve & missing_airPres & missing_depth #revisit "depth" here and elsewhere
 
+    got_airpres = TRUE
     if(need_airPres_for_DOsat || need_airPres_for_Q || retrieve_air_pres){
 
-        got_airpres = FALSE
-        airpres = try(retrieve_air_pressure(md, dd), silent=TRUE)
+        # airpres = try(retrieve_air_pressure(md, dd), silent=TRUE)
+        #
+        # if(class(airpres) == 'try-error' || nrow(airpres) == 0) {
+        airpres = try(retrieve_air_pressure3(md, dd), silent=TRUE)
 
-        if(class(airpres) == 'try-error' || nrow(airpres) == 0) {
-
-            cat('Failed to retrieve air pressure data from NCDC.\n',
-                '\tTrying NCEP. This method is slow and only works in U.S.A.\n')
-
-            airpres = try(retrieve_air_pressure2(md, dd), silent=TRUE)
-
-            if(class(airpres) == 'try-error') {
-                warning(paste('Failed to retrieve air pressure data.'),
+        if(inherits(airpres, 'try-error')) {
+            warning(paste('Failed to retrieve air pressure data.'),
                     call.=FALSE)
-            } else {
-                got_airpres = TRUE
-            }
-
-        } else {
-            got_airpres = TRUE
-            # linearly interpolate missing values for wind speed and air pressure
-            # dd$wind_speed = approx(x=dd$wind_speed, xout=which(is.na(dd$wind_speed)))$y
-            # dd$AirPres_kPa = approx(x=dd$AirPres_kPa,
-            #     xout=which(is.na(dd$AirPres_kPa)))$y
+            got_airpres = FALSE
         }
 
         #just join airpres to dataframe if AirPres_kPA entirely missing
@@ -505,25 +487,25 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
 
             #then impute any remaining blanks
             dd$AirPres_kPa = zoo::na.approx(dd$AirPres_kPa,
-                na.rm=FALSE, rule=2)
+                                            na.rm=FALSE, rule=2)
         }
     }
 
     airpres_coverage = sum(! is.na(dd$AirPres_kPa)) / nrow(dd)
     if(! need_airPres_for_DOsat && ! need_airPres_for_Q && ! retrieve_air_pres &&
-        airpres_coverage < 0.5){
+       airpres_coverage < 0.5){
         warning(paste0('Air pressure coverage is ',
-            round(airpres_coverage * 100, 1),
-            '%.\n\tIf you need it to estimate DO saturation or depth, ',
-            'streamMetabolizer may fail.\n\tYou may be able to solve this (or improve ',
-            'your results)\n\tby setting retrieve_air_pres=TRUE.'), call.=FALSE)
+                       round(airpres_coverage * 100, 1),
+                       '%.\n\tIf you need it to estimate DO saturation or depth, ',
+                       'streamMetabolizer may fail.\n\tYou may be able to solve this (or improve ',
+                       'your results)\n\tby setting retrieve_air_pres=TRUE.'), call.=FALSE)
     }
 
     #correct any negative or 0 depth values (these break streamMetabolizer)
     if('Depth_m' %in% vd){
         if(any(na.omit(dd$Depth_m) <= 0)){
             warning('Depth values <= 0 detected. Replacing with 0.01 m.',
-                call.=FALSE)
+                    call.=FALSE)
             dd$Depth_m[dd$Depth_m <= 0] = 0.01
         }
     }
@@ -532,23 +514,23 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     #if arguments have been supplied to zq_curve.
     if('Discharge_m3s' %in% vd & using_zq_curve){
         warning(paste0('Arguments supplied to zq_curve, so ignoring available',
-            '\n\tdischarge time-series data.'), call.=FALSE)
+                       '\n\tdischarge time-series data.'), call.=FALSE)
     }
     if(zq_supplied){
         cat(paste0('Modeling discharge from rating curve.\n\tCurve will be ',
-            'generated from supplied Z and Q samples.\n'))
+                   'generated from supplied Z and Q samples.\n'))
         depth_disch = estimate_discharge(Z=Z, Q=Q, sh=sensor_height,
-            dd=dd, fit=fit, ignore_oob_Z=ignore_oob_Z, plot=zqplot)
+                                         dd=dd, fit=fit, ignore_oob_Z=ignore_oob_Z, plot=zqplot)
         dd$Discharge_m3s = depth_disch$discharge
         dd$Depth_m = depth_disch$depth
         vd = c(vd, 'Discharge_m3s', 'Depth_m')
     } else {
         if(ab_supplied){
             cat(paste0('Modeling discharge from rating curve determined by',
-                '\n\tsupplied a and b parameters.\n'))
+                       '\n\tsupplied a and b parameters.\n'))
             depth_disch = estimate_discharge(a=a, b=b,
-                sh=sensor_height, dd=dd, fit=fit, ignore_oob_Z=ignore_oob_Z,
-                plot=zqplot)
+                                             sh=sensor_height, dd=dd, fit=fit, ignore_oob_Z=ignore_oob_Z,
+                                             plot=zqplot)
             dd$Discharge_m3s = depth_disch$discharge
             dd$Depth_m = depth_disch$depth
             vd = c(vd, 'Discharge_m3s', 'Depth_m')
@@ -586,7 +568,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     if('Discharge_m3s' %in% vd){
         if(any(na.omit(dd$Discharge_m3s) <= 0)){
             warning('Discharge values <= 0 detected. Replacing with 0.01.',
-                call.=FALSE)
+                    call.=FALSE)
             dd$Discharge_m3s[dd$Discharge_m3s <= 0] = 0.01
         }
     }
@@ -598,14 +580,14 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     # estimate par
     apparentsolartime = suppressWarnings(
         streamMetabolizer::convert_UTC_to_solartime(date.time=dd$DateTime_UTC,
-            longitude=md$lon[1], time.type="apparent solar"))
+                                                    longitude=md$lon[1], time.type="apparent solar"))
     dd$light = suppressWarnings(streamMetabolizer::calc_solar_insolation(
         app.solar.time=apparentsolartime, latitude=md$lat[1], format="degrees"))
 
     if("Light_PAR" %in% vd && ! estimate_PAR){
         message(paste0("Using supplied light data. Unless you're quite ",
-            "confident in these data,\n\tit may be preferable to set ",
-            "estimate_PAR=TRUE."))
+                       "confident in these data,\n\tit may be preferable to set ",
+                       "estimate_PAR=TRUE."))
         dd$light[! is.na(dd$Light_PAR)] = dd$Light_PAR[! is.na(dd$Light_PAR)]
     } else {
         cat("Estimating PAR from latitude and time.\n")
@@ -617,7 +599,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     # impute missing data. code found in gapfill_functions.R (maxspan_days deprecated)
     dd = select(dd, -c(region, site, DateTime_UTC))
     if(fillgaps != 'none') dd = gap_fill(dd, maxspan_days=5, knn=3,
-        sint=desired_int, algorithm=fillgaps, maxhours, ...)
+                                         sint=desired_int, algorithm=fillgaps, maxhours, ...)
 
     #rename variables
     if("DO_mgL" %in% vd) dd$DO.obs = dd$DO_mgL
@@ -650,12 +632,12 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
 
             if(estimate_areal_depth){
                 stop(paste0('Missing discharge and depth data.\n\tNot enough ',
-                    'information to proceed.\n\tMight parameter "zq_curve"',
-                    ' be of service?'), call.=FALSE)
+                            'information to proceed.\n\tMight parameter "zq_curve"',
+                            ' be of service?'), call.=FALSE)
             } else {
                 stop(paste0('Missing depth data.\n\tNot enough information to ',
-                    'proceed.\n\tTry setting estimate_areal_depth to TRUE.'),
-                    call.=FALSE)
+                            'proceed.\n\tTry setting estimate_areal_depth to TRUE.'),
+                     call.=FALSE)
             }
         }
     }
@@ -663,7 +645,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     # kPa to atm
     if(! 'DO_mgL' %in% vd){
         stop(paste0('streamMetabolizer cannot',
-            ' be run without DO_mgL.'), call.=FALSE)
+                    ' be run without DO_mgL.'), call.=FALSE)
     }
 
     if("AirPres_kPa" %in% vd) dd$atmo.pressure = dd$AirPres_kPa / 101.325
@@ -683,13 +665,13 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
             } else {
                 if(!all(c("temp.water","AirPres_kPa") %in% colnames(dd))){
                     stop(paste('Insufficient data to fit this model.\n\tNeed',
-                        'either DO sat OR water temp and\n\tair ',
-                        'pressure.'), call.=FALSE)
+                               'either DO sat OR water temp and\n\tair ',
+                               'pressure.'), call.=FALSE)
                 }
                 cat('Modeling DO.sat based on water temperature and',
                     'air pressure.\n')
                 dd$DO.sat = LakeMetabolizer::o2.at.sat.base(temp=dd$temp.water,
-                    baro=dd$AirPres_kPa*10, salinity=0, model='garcia-benson')
+                                                            baro=dd$AirPres_kPa*10, salinity=0, model='garcia-benson')
             }
         }
     }
@@ -697,23 +679,23 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     # Select variables for model
     if(model == "BASE"){
         model_variables = c("solar.time","DO.obs","temp.water","light",
-            "atmo.pressure")
+                            "atmo.pressure")
     } else { # streamMetabolizer
         model_variables = c("solar.time","DO.obs","DO.sat","depth",
-            "temp.water","light")
+                            "temp.water","light")
         # if(type=="bayes") model_variables = c(model_variables,"discharge")
     }
 
     if(!all(model_variables %in% colnames(dd))){
         missing = model_variables[which(! model_variables %in% colnames(dd))]
         stop(paste0('Insufficient data to fit this model.\n\t',
-            'Missing variable(s): ', paste0(missing, collapse=', ')),
-            call.=FALSE)
+                    'Missing variable(s): ', paste0(missing, collapse=', ')),
+             call.=FALSE)
     }
     if(model == 'streamMetabolizer' && type == 'bayes' &&
-            ! 'discharge' %in% colnames(dd)){
+       ! 'discharge' %in% colnames(dd)){
         warning(paste("Without discharge data (or estimates), you'll have to",
-            "\n\trun fit_metabolism with pool_K600='none'."), call.=FALSE)
+                      "\n\trun fit_metabolism with pool_K600='none'."), call.=FALSE)
     }
 
     # Structure data, add class for model name
@@ -721,7 +703,7 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
         # fitdata = dd %>% select_(.dots=model_variables) %>%
         fitdata = dd %>% select(model_variables) %>%
             mutate(Date=as.Date(solar.time),
-                Time=strftime(solar.time, format="%H:%M:%S"), salinity=0) %>%
+                   Time=strftime(solar.time, format="%H:%M:%S"), salinity=0) %>%
             rename(I=light, tempC=temp.water, DO.meas=DO.obs) %>%
             select(Date, Time, I, tempC, DO.meas, atmo.pressure, salinity)
         BASE = setClass("BASE", contains="data.frame")
@@ -749,11 +731,11 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     #return list of specs passed on from request_date,
     #as well as new list of specs passed into this function
     out = list(data=outdata,
-        specs=append(d$specs,
-            list(model=model, type=type, interval=interval,
-                rm_flagged=paste0(unlist(rm_flagged), collapse=','),
-                fillgaps=fillgaps, used_rating_curve=using_zq_curve,
-                estimate_areal_depth=estimate_areal_depth)))
+               specs=append(d$specs,
+                            list(model=model, type=type, interval=interval,
+                                 rm_flagged=paste0(unlist(rm_flagged), collapse=','),
+                                 fillgaps=fillgaps, used_rating_curve=using_zq_curve,
+                                 estimate_areal_depth=estimate_areal_depth)))
 
     return(out)
 }
