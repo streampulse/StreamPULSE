@@ -19,9 +19,7 @@ or BASE, model fitting and prediction, and visualization of model outputs.
 ---
 ### **Installation**
 ```R
-# in R
-library(devtools)
-install_github('streampulse/StreamPULSE')
+remotes::install_github('streampulse/StreamPULSE')
 ```
 
 ---
