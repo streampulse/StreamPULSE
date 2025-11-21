@@ -461,15 +461,16 @@ prep_metabolism = function(d, model="streamMetabolizer", type="bayes",
     got_airpres = TRUE
     if(need_airPres_for_DOsat || need_airPres_for_Q || retrieve_air_pres){
 
-        # airpres = try(retrieve_air_pressure(md, dd), silent=TRUE)
-        #
-        # if(class(airpres) == 'try-error' || nrow(airpres) == 0) {
-        airpres = try(retrieve_air_pressure3(md, dd), silent=TRUE)
+        airpres = try(retrieve_air_pressure(md, dd), silent=TRUE)
 
-        if(inherits(airpres, 'try-error')) {
-            warning(paste('Failed to retrieve air pressure data.'),
-                    call.=FALSE)
-            got_airpres = FALSE
+        if(class(airpres) == 'try-error' || nrow(airpres) == 0) {
+            airpres = try(retrieve_air_pressure2(md, dd), silent=TRUE)
+
+            if(inherits(airpres, 'try-error')) {
+                warning(paste('Failed to retrieve air pressure data.'),
+                        call.=FALSE)
+                got_airpres = FALSE
+            }
         }
 
         #just join airpres to dataframe if AirPres_kPA entirely missing

@@ -257,6 +257,138 @@ retrieve_air_pressure3 = function(md, dd){
     return(df_out)
 }
 
+retrieve_air_pressure4 <- function(md, dd,
+                                   token = Sys.getenv("EARTHDATA_TOKEN"),
+                                   # data_id_nldas = "NLDAS_FORA0125_H_2.0_PSurf",
+                                   # data_id_gldas = "GLDAS_NOAH025_3H_2.0_Psurf_f_inst") {
+                                   data_id_nldas = "NLDAS_FORA0125_H_2.0",
+                                   data_id_gldas = "GLDAS_NOAH025_3H_2.1") {
+
+    if (token == "") {
+        stop("No Earthdata token found. Set EARTHDATA_TOKEN env var or pass token= explicitly.")
+    }
+
+    lat <- md$lat
+    lon <- md$lon
+
+    startdate <- as.Date(dd$DateTime_UTC[1])
+    enddate   <- as.Date(dd$DateTime_UTC[nrow(dd)])
+
+    message("Collecting air pressure data from NLDAS (or GLDAS outside CONUS) via Giovanni time series.")
+
+    # NLDAS only from 1979 onward
+    if (enddate < as.Date("1979-01-01")) {
+        warning("Cannot retrieve air pressure before 1979.")
+        stop()
+    }
+    if (startdate < as.Date("1979-01-01")) {
+        warning("Cannot retrieve air pressure before 1979. Truncating to 1979-01-02.")
+        startdate <- as.Date("1979-01-02")
+    }
+    if (startdate == enddate) {
+        enddate <- enddate + 1
+    }
+
+    # Decide NLDAS vs GLDAS based on lat/lon (NLDAS native box)
+    # NLDAS extent: lat ~24.85–53.28, lon ~-125.15–-66.85  :contentReference[oaicite:7]{index=7}
+    in_nldas_box <- lat >= 24.85 & lat <= 53.28 & lon >= -125.15 & lon <= -66.85
+
+    if (in_nldas_box) {
+        data_id <- data_id_nldas
+    } else {
+        # Preserve your original “GLDAS only from 2000” behavior
+        if (enddate < as.Date("2000-01-01")) {
+            warning("non-CONUS air pressure data (GLDAS) only available after year 2000.")
+            stop()
+        }
+        if (startdate < as.Date("2000-01-01")) {
+            warning("non-CONUS air pressure data (GLDAS) only available after year 2000. Truncating to 2000-01-01.")
+            startdate <- as.Date("2000-01-01")
+        }
+        data_id <- data_id_gldas
+    }
+
+    start_str <- paste0(as.character(startdate), "T00:00:00")
+    end_str   <- paste0(as.character(enddate),   "T23:59:59")
+
+    # Build Giovanni request
+    base_url <- "https://api.giovanni.earthdata.nasa.gov/timeseries"
+
+    # Use httr to call API and capture text
+    resp <- httr::GET(
+        url = base_url,
+        query = list(
+            data     = data_id,
+            location = sprintf("[%.6f,%.6f]", lat, lon),
+            time     = paste0(start_str, "/", end_str)
+            # Giovanni defaults to CSV for this endpoint
+        ),
+        httr::add_headers(Authorization = paste("Bearer", token))
+    )
+
+    httr::stop_for_status(resp)
+
+    stop('now we need to extract pressure data from this collection')
+    #something like?
+    press_col <- grep("PSurf|Psurf_f_inst", names(df_raw), value = TRUE)
+    df_raw[[press_col]]
+
+    txt <- httr::content(resp, as = "text", encoding = "UTF-8")
+
+    # Split into lines and locate header "Timestamp (UTC),Data"
+    all_lines <- readr::read_lines(I(txt))
+    header_idx <- which(grepl("^Timestamp \\(UTC\\),Data", all_lines))[1]
+
+    if (is.na(header_idx)) {
+        stop("Giovanni response did not contain a 'Timestamp (UTC),Data' header. Response:\n",
+             substr(txt, 1, 1000))
+    }
+
+    # Parse metadata to find undef (missing value code)
+    undef_line <- all_lines[grepl("^undef,", all_lines)]
+    undef_val  <- NA_real_
+    if (length(undef_line) > 0) {
+        # line looks like: "undef,-9.9999e+3"
+        bits <- strsplit(undef_line[1], ",", fixed = TRUE)[[1]]
+        if (length(bits) >= 2) {
+            suppressWarnings({
+                undef_val <- as.numeric(bits[2])
+            })
+        }
+    }
+
+    data_lines <- all_lines[header_idx:length(all_lines)]
+    df_raw <- readr::read_csv(
+        I(paste(data_lines, collapse = "\n")),
+        show_col_types = FALSE
+    )
+
+    # Expect columns "Timestamp (UTC)" and "Data"
+    if (!all(c("Timestamp (UTC)", "Data") %in% names(df_raw))) {
+        stop("Unexpected column names in Giovanni data section: ",
+             paste(names(df_raw), collapse = ", "))
+    }
+
+    df_out <- df_raw %>%
+        dplyr::rename(
+            DateTime_UTC = `Timestamp (UTC)`,
+            AirPres_val  = Data
+        ) %>%
+        dplyr::mutate(
+            AirPres_val = if (!is.na(undef_val)) dplyr::na_if(AirPres_val, undef_val) else AirPres_val,
+            # NLDAS/GLDAS surface pressure is in Pa -> convert to kPa
+            AirPres_kPa = AirPres_val / 1000
+        ) %>%
+        dplyr::select(DateTime_UTC, AirPres_kPa)
+
+    # Keep DateTime_UTC as character to minimize downstream breakage,
+    # but you could convert to POSIXct here if you prefer:
+    # df_out$DateTime_UTC <- as.POSIXct(df_out$DateTime_UTC, tz = "UTC")
+
+    as.data.frame(df_out)
+}
+
+
 estimate_discharge = function(Z=NULL, Q=NULL, a=NULL, b=NULL,
     sh=NULL, dd=NULL, fit, ignore_oob_Z, plot){
 
